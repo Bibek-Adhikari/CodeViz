@@ -1136,5 +1136,497 @@ console.log("Count:", c1());`,
         stdout: ['$ node index.js', 'Count: 11']
       }
     ]
+  },
+  {
+    id: 'python-binary-search',
+    title: 'Binary Search (Divide & Conquer)',
+    category: 'Algorithms & Searching',
+    language: 'python',
+    description: 'Logarithmic search over a sorted array tracking low, high, and mid index pointers.',
+    complexity: { time: 'O(log N)', space: 'O(1)' },
+    code: `def binary_search(arr, target):
+    low = 0
+    high = len(arr) - 1
+    
+    while low <= high:
+        mid = (low + high) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            low = mid + 1
+        else:
+            high = mid - 1
+    return -1
+
+nums = [2, 5, 8, 12, 16, 23, 38, 56]
+ans = binary_search(nums, 23)
+print("Found at index:", ans)`,
+    steps: [
+      {
+        stepNumber: 1,
+        line: 15,
+        explanation: 'Initialize sorted array nums = [2, 5, 8, 12, 16, 23, 38, 56] on Heap memory.',
+        event: 'init',
+        highlightVariables: ['nums'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: true,
+            variables: {
+              nums: { name: 'nums', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]', isModified: true }
+            }
+          }
+        ],
+        heap: [
+          {
+            id: '#Arr-01',
+            type: 'list',
+            label: 'Sorted List (N=8)',
+            value: '[2, 5, 8, 12, 16, 23, 38, 56]',
+            properties: { length: 8 }
+          }
+        ],
+        stdout: []
+      },
+      {
+        stepNumber: 2,
+        line: 16,
+        explanation: 'Call binary_search(nums, target=23). Pushes new stack frame binary_search().',
+        event: 'call',
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: {
+              nums: { name: 'nums', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' }
+            }
+          },
+          {
+            id: 'frame-bs',
+            functionName: 'binary_search()',
+            isCurrent: true,
+            lineCalled: 16,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              target: { name: 'target', type: 'int', value: 23, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 3,
+        line: 2,
+        explanation: 'Set initial search boundary: low = 0 (val=2), high = len(arr) - 1 = 7 (val=56).',
+        event: 'assign',
+        highlightVariables: ['low', 'high'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { nums: { name: 'nums', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-bs',
+            functionName: 'binary_search()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              target: { name: 'target', type: 'int', value: 23 },
+              low: { name: 'low', type: 'int', value: 0, isModified: true },
+              high: { name: 'high', type: 'int', value: 7, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 4,
+        line: 6,
+        explanation: 'Iteration 1: Calculate midpoint index mid = (0 + 7) // 2 = 3. arr[3] = 12.',
+        event: 'assign',
+        highlightVariables: ['mid'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { nums: { name: 'nums', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-bs',
+            functionName: 'binary_search()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              target: { name: 'target', type: 'int', value: 23 },
+              low: { name: 'low', type: 'int', value: 0 },
+              high: { name: 'high', type: 'int', value: 7 },
+              mid: { name: 'mid', type: 'int', value: 3, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 5,
+        line: 9,
+        explanation: 'arr[3] = 12 < target (23). Target must be in right half. Adjust low = mid + 1 = 4.',
+        event: 'condition',
+        highlightVariables: ['low'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { nums: { name: 'nums', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-bs',
+            functionName: 'binary_search()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              target: { name: 'target', type: 'int', value: 23 },
+              low: { name: 'low', type: 'int', value: 4, isModified: true },
+              high: { name: 'high', type: 'int', value: 7 },
+              mid: { name: 'mid', type: 'int', value: 3 }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 6,
+        line: 6,
+        explanation: 'Iteration 2: Range [4 ... 7]. New mid = (4 + 7) // 2 = 5. arr[5] = 23.',
+        event: 'assign',
+        highlightVariables: ['mid'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { nums: { name: 'nums', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-bs',
+            functionName: 'binary_search()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              target: { name: 'target', type: 'int', value: 23 },
+              low: { name: 'low', type: 'int', value: 4 },
+              high: { name: 'high', type: 'int', value: 7 },
+              mid: { name: 'mid', type: 'int', value: 5, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 7,
+        line: 7,
+        explanation: 'Match found! arr[5] == 23 equals target. Return index 5.',
+        event: 'return',
+        highlightVariables: ['mid'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { nums: { name: 'nums', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-bs',
+            functionName: 'binary_search()',
+            isCurrent: true,
+            returnValue: '5',
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              target: { name: 'target', type: 'int', value: 23 },
+              low: { name: 'low', type: 'int', value: 4 },
+              high: { name: 'high', type: 'int', value: 7 },
+              mid: { name: 'mid', type: 'int', value: 5 }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 8,
+        line: 16,
+        explanation: 'binary_search() frame pops. Result 5 assigned to global variable ans.',
+        event: 'assign',
+        highlightVariables: ['ans'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: true,
+            variables: {
+              nums: { name: 'nums', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              ans: { name: 'ans', type: 'int', value: 5, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 9,
+        line: 17,
+        explanation: 'Print output displaying "Found at index: 5".',
+        event: 'print',
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: true,
+            variables: {
+              nums: { name: 'nums', type: 'list', value: '[2, 5, 8, 12, 16, 23, 38, 56]' },
+              ans: { name: 'ans', type: 'int', value: 5 }
+            }
+          }
+        ],
+        heap: [],
+        stdout: ['$ python main.py', 'Found at index: 5']
+      }
+    ]
+  },
+  {
+    id: 'python-bubble-sort',
+    title: 'Bubble Sort (Adjacent Swaps)',
+    category: 'Algorithms & Sorting',
+    language: 'python',
+    description: 'Repeatedly steps through the list, compares adjacent elements, and swaps them if out of order.',
+    complexity: { time: 'O(N²)', space: 'O(1)' },
+    code: `def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr
+
+data = [29, 10, 14, 37, 13]
+sorted_data = bubble_sort(data)
+print("Sorted:", sorted_data)`,
+    steps: [
+      {
+        stepNumber: 1,
+        line: 9,
+        explanation: 'Initialize unsorted array data = [29, 10, 14, 37, 13] on Heap.',
+        event: 'init',
+        highlightVariables: ['data'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: true,
+            variables: {
+              data: { name: 'data', type: 'list', value: '[29, 10, 14, 37, 13]', isModified: true }
+            }
+          }
+        ],
+        heap: [
+          {
+            id: '#Heap-Arr',
+            type: 'list',
+            label: 'Data Array (N=5)',
+            value: '[29, 10, 14, 37, 13]'
+          }
+        ],
+        stdout: []
+      },
+      {
+        stepNumber: 2,
+        line: 10,
+        explanation: 'Call bubble_sort(data). Pass reference to data array.',
+        event: 'call',
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { data: { name: 'data', type: 'list', value: '[29, 10, 14, 37, 13]' } }
+          },
+          {
+            id: 'frame-sort',
+            functionName: 'bubble_sort()',
+            isCurrent: true,
+            lineCalled: 10,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[29, 10, 14, 37, 13]' },
+              n: { name: 'n', type: 'int', value: 5, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 3,
+        line: 4,
+        explanation: 'Pass 1 (i=0, j=0): Compare arr[0] (29) with arr[1] (10). 29 > 10, so swap elements.',
+        event: 'assign',
+        highlightVariables: ['arr', 'i', 'j'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { data: { name: 'data', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-sort',
+            functionName: 'bubble_sort()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[10, 29, 14, 37, 13]', isModified: true },
+              i: { name: 'i', type: 'int', value: 0 },
+              j: { name: 'j', type: 'int', value: 0 }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 4,
+        line: 4,
+        explanation: 'Pass 1 (i=0, j=1): Compare arr[1] (29) with arr[2] (14). 29 > 14, swap elements -> [10, 14, 29, 37, 13].',
+        event: 'assign',
+        highlightVariables: ['arr', 'j'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { data: { name: 'data', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-sort',
+            functionName: 'bubble_sort()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[10, 14, 29, 37, 13]', isModified: true },
+              i: { name: 'i', type: 'int', value: 0 },
+              j: { name: 'j', type: 'int', value: 1, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 5,
+        line: 4,
+        explanation: 'Pass 1 (i=0, j=2): Compare arr[2] (29) with arr[3] (37). 29 <= 37, no swap.',
+        event: 'loop',
+        highlightVariables: ['j'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { data: { name: 'data', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-sort',
+            functionName: 'bubble_sort()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[10, 14, 29, 37, 13]' },
+              i: { name: 'i', type: 'int', value: 0 },
+              j: { name: 'j', type: 'int', value: 2, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 6,
+        line: 4,
+        explanation: 'Pass 1 (i=0, j=3): Compare arr[3] (37) with arr[4] (13). 37 > 13, swap -> [10, 14, 29, 13, 37]. 37 is now in sorted final position!',
+        event: 'assign',
+        highlightVariables: ['arr', 'j'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { data: { name: 'data', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-sort',
+            functionName: 'bubble_sort()',
+            isCurrent: true,
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[10, 14, 29, 13, 37]', isModified: true },
+              i: { name: 'i', type: 'int', value: 0 },
+              j: { name: 'j', type: 'int', value: 3, isModified: true }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 7,
+        line: 7,
+        explanation: 'Remaining passes complete. Array fully sorted -> [10, 13, 14, 29, 37]. Return arr.',
+        event: 'return',
+        highlightVariables: ['arr'],
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: false,
+            variables: { data: { name: 'data', type: 'list', value: '[...]' } }
+          },
+          {
+            id: 'frame-sort',
+            functionName: 'bubble_sort()',
+            isCurrent: true,
+            returnValue: '[10, 13, 14, 29, 37]',
+            variables: {
+              arr: { name: 'arr', type: 'list', value: '[10, 13, 14, 29, 37]' }
+            }
+          }
+        ],
+        heap: [],
+        stdout: []
+      },
+      {
+        stepNumber: 8,
+        line: 11,
+        explanation: 'Print output with sorted array result.',
+        event: 'print',
+        callStack: [
+          {
+            id: 'frame-global',
+            functionName: 'GLOBAL',
+            isCurrent: true,
+            variables: {
+              data: { name: 'data', type: 'list', value: '[10, 13, 14, 29, 37]' },
+              sorted_data: { name: 'sorted_data', type: 'list', value: '[10, 13, 14, 29, 37]' }
+            }
+          }
+        ],
+        heap: [],
+        stdout: ['$ python main.py', 'Sorted: [10, 13, 14, 29, 37]']
+      }
+    ]
   }
 ];

@@ -2,7 +2,36 @@ export type Language = 'python' | 'java' | 'cpp' | 'javascript';
 
 export type Theme = 'dark' | 'light';
 
+export type ViewTab = 'all' | 'code' | 'memory' | 'algorithm' | 'console';
+
 export type VariableType = 'int' | 'float' | 'string' | 'bool' | 'list' | 'dict' | 'pointer' | 'object' | 'none';
+
+export type AlgorithmVisualizerMode = 'array_sort' | 'binary_search' | 'two_pointers' | 'recursion_tree' | 'linked_list' | 'binary_tree' | 'graph_bfs_dfs';
+
+export interface ArrayElementState {
+  value: number;
+  index: number;
+  status: 'default' | 'comparing' | 'swapping' | 'sorted' | 'pivot' | 'active_range' | 'found' | 'eliminated';
+  pointers?: string[]; // e.g. ['low', 'mid', 'high', 'i', 'j', 'left', 'right']
+}
+
+export interface RecursionTreeNode {
+  id: string;
+  name: string;
+  args: string;
+  returnValue?: string | number;
+  depth: number;
+  status: 'calling' | 'active' | 'returned';
+  children?: RecursionTreeNode[];
+}
+
+export interface LinkedListVisualNode {
+  id: string;
+  value: string | number;
+  nextId: string | null;
+  pointers?: string[]; // e.g. ['HEAD', 'CURR', 'PREV']
+  status: 'default' | 'active' | 'modified' | 'visited';
+}
 
 export interface VariableValue {
   name: string;

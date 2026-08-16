@@ -16,10 +16,12 @@ import {
   Sun,
   Moon,
   LayoutGrid,
-  BookOpen
+  BookOpen,
+  TrendingUp
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Tooltip } from './common/Tooltip';
+import { ViewTab } from '../types';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -28,8 +30,8 @@ interface HeaderProps {
   onOpenAIExplainer: () => void;
   onOpenQuiz?: () => void;
   onOpenSettings: () => void;
-  activeViewTab: 'all' | 'code' | 'memory' | 'console';
-  setActiveViewTab: (tab: 'all' | 'code' | 'memory' | 'console') => void;
+  activeViewTab: ViewTab;
+  setActiveViewTab: (tab: ViewTab) => void;
   isAiExplaining?: boolean;
 }
 
@@ -163,6 +165,21 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Cpu className="w-3.5 h-3.5" />
               <span>Memory</span>
+            </button>
+          </Tooltip>
+
+          <Tooltip content="Interactive Algorithm & Data Structure Visualizer" position="bottom">
+            <button
+              id="view-tab-algorithm"
+              onClick={() => setActiveViewTab('algorithm')}
+              className={`px-2 py-1 text-[0.75rem] font-medium rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                activeViewTab === 'algorithm'
+                  ? 'bg-white dark:bg-blue-600 text-slate-900 dark:text-white shadow-xs font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Algorithms</span>
             </button>
           </Tooltip>
 

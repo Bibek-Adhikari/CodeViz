@@ -10,7 +10,8 @@ import {
   Language, 
   ExecutionProgram, 
   ExecutionStep, 
-  StudyMaterial 
+  StudyMaterial,
+  ViewTab
 } from './types';
 import { generateExecutionSteps } from './utils/codeInterpreter';
 import { Header } from './components/Header';
@@ -20,6 +21,7 @@ import { ExecutionControls } from './components/ExecutionControls';
 import { ExecutionTimeline } from './components/ExecutionTimeline';
 import { MemoryStatePanel } from './components/panels/MemoryStatePanel';
 import { ConsolePanel } from './components/panels/ConsolePanel';
+import { AlgorithmVisualizerPanel } from './components/panels/AlgorithmVisualizerPanel';
 import { PdfViewerModal } from './components/modals/PdfViewerModal';
 import { ImagePreviewModal } from './components/modals/ImagePreviewModal';
 import { AIExplainerModal } from './components/modals/AIExplainerModal';
@@ -27,7 +29,7 @@ import { SearchModal } from './components/modals/SearchModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { AIQuizModal } from './components/modals/AIQuizModal';
 import { useTheme } from './context/ThemeContext';
-import { LayoutGrid, Code2, Cpu, Terminal, PanelLeft } from 'lucide-react';
+import { LayoutGrid, Code2, Cpu, Terminal, PanelLeft, TrendingUp } from 'lucide-react';
 
 export default function App() {
   const { isDark } = useTheme();
