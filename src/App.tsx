@@ -15,6 +15,7 @@ import {
 import { generateExecutionSteps } from './utils/codeInterpreter';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { CodeEditor } from './components/CodeEditor';
 import { ExecutionControls } from './components/ExecutionControls';
 import { ExecutionTimeline } from './components/ExecutionTimeline';
 import { MemoryStatePanel } from './components/panels/MemoryStatePanel';
@@ -318,8 +319,26 @@ export default function App() {
 
         {/* Primary Workspace Zone */}
         <main className="flex-1 flex flex-col min-w-0 overflow-y-auto p-4 sm:p-5 gap-4 bg-[#0A0E14]">
-          {/* Top Section: Program Selection & Execution Controls */}
-          <div className="shrink-0">
+          {/* Top Section: Code Editor (Pasting & Editing) & Execution Controls */}
+          <div className="grid grid-cols-1 gap-3 shrink-0">
+            {/* Code Editor Block for Pasting & Editing */}
+            <div className="min-h-[290px] h-[34vh] max-h-[420px]">
+              <CodeEditor
+                code={code}
+                onChangeCode={setCode}
+                language={language}
+                onChangeLanguage={setLanguage}
+                currentLine={currentLine}
+                onRunVisualize={handleRunVisualize}
+                onReset={handleReset}
+                programs={programs}
+                selectedProgramId={selectedProgramId}
+                onSelectProgram={handleSelectProgram}
+                isRunning={isPlaying}
+              />
+            </div>
+
+            {/* Execution Controls Bar */}
             <ExecutionControls
               currentStepIndex={currentStepIndex}
               totalSteps={executionSteps.length}
@@ -341,17 +360,17 @@ export default function App() {
             />
           </div>
 
-          {/* Visualization Workspace Area: Memory Stack & Console Output Only */}
-          <div className="flex-1 flex flex-col gap-3.5 min-h-[480px]">
+          {/* Visualization Workspace Area: Memory Stack & Console Output Only (Removed redundant bottom code block) */}
+          <div className="flex-1 flex flex-col gap-3.5 min-h-[380px]">
             {/* Section Header */}
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
                 <h2 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Memory Stack & Console Runtime
+                  Memory Stack & Console Output
                 </h2>
                 <span className="text-[11px] text-slate-400 font-normal">
-                  • {currentProgram.title} ({language.toUpperCase()})
+                  • Live runtime memory & stdout
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -362,16 +381,16 @@ export default function App() {
               </div>
             </div>
 
-            {/* Memory Stack and Console Output Panels Grid */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[420px]">
-              {/* Panel 1: Memory State (Stack Frames, Heap Objects & Persistent Variable Watchlist) */}
+            {/* Memory Stack and Console Output Panels Grid (2 panels only) */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[320px]">
+              {/* Panel 1: Memory State (Stack Frames, Heap Objects & Variable Watchlist) */}
               <div
-                className={`h-full min-h-[400px] ${
+                className={`h-full min-h-[300px] ${
                   activeViewTab === 'all'
                     ? 'lg:col-span-7 xl:col-span-8 block'
                     : activeViewTab === 'memory'
                     ? 'lg:col-span-12 block'
-                    : 'hidden'
+                    : 'hidden lg:block'
                 }`}
               >
                 <MemoryStatePanel
@@ -384,14 +403,14 @@ export default function App() {
                 />
               </div>
 
-              {/* Panel 2: Console Output (Terminal, Standard Output, Logs & Stream) */}
+              {/* Panel 2: Console Output (Standard Output / Terminal) */}
               <div
-                className={`h-full min-h-[400px] ${
+                className={`h-full min-h-[300px] ${
                   activeViewTab === 'all'
                     ? 'lg:col-span-5 xl:col-span-4 block'
                     : activeViewTab === 'console'
                     ? 'lg:col-span-12 block'
-                    : 'hidden'
+                    : 'hidden lg:block'
                 }`}
               >
                 <ConsolePanel
