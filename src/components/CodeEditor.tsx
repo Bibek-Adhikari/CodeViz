@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Play, 
   RotateCcw, 
@@ -6,14 +6,20 @@ import {
   Code2, 
   Copy, 
   Check, 
-  FileCode, 
   Maximize2, 
   Minimize2,
   ChevronDown,
-  Layers,
-  CircleDot
+  CircleDot,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Lightbulb,
+  Wrench,
+  X,
+  ArrowRight
 } from 'lucide-react';
 import { Language, ExecutionProgram } from '../types';
+import { validateSyntax, SyntaxErrorDetail } from '../utils/syntaxValidator';
 
 interface CodeEditorProps {
   code: string;
@@ -45,14 +51,38 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [breakpoints, setBreakpoints] = useState<number[]>([]);
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hoveredErrorLine, setHoveredErrorLine] = useState<number | null>(null);
+  const [pinnedErrorLine, setPinnedErrorLine] = useState<number | null>(null);
+  const [activeFixLine, setActiveFixLine] = useState<number | null>(null);
+  const [syntaxWarningBanner, setSyntaxWarningBanner] = useState<string | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorBodyRef = useRef<HTMLDivElement>(null);
 
-  const lines = code.split('\n');
+  const lines = useMemo(() => code.split('\n'), [code]);
+
+  // Real-time syntax validation
+  const syntaxErrors = useMemo(() => {
+    return validateSyntax(code, language);
+  }, [code, language]);
+
+  // Group errors by line number (1-indexed)
+  const errorsByLine = useMemo(() => {
+    const map: Record<number, SyntaxErrorDetail[]> = {};
+    syntaxErrors.forEach((err) => {
+      if (!map[err.line]) map[err.line] = [];
+      map[err.line].push(err);
+    });
+    return map;
+  }, [syntaxErrors]);
+
+  const activeErrorLine = pinnedErrorLine ?? hoveredErrorLine;
+  const activeErrors = activeErrorLine ? errorsByLine[activeErrorLine] || [] : [];
 
   const toggleBreakpoint = (lineNum: number) => {
     if (breakpoints.includes(lineNum)) {
-      setBreakpoints(breakpoints.filter(b => b !== lineNum));
+      setBreakpoints(breakpoints.filter((b) => b !== lineNum));
     } else {
       setBreakpoints([...breakpoints, lineNum]);
     }
@@ -79,9 +109,89 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   };
 
+  // Detect which line is hovered by mouse coordinates on the textarea
+  const handleMouseMoveTextarea = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (pinnedErrorLine) return; // don't override pinned modal
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top + e.currentTarget.scrollTop - 12; // 12px top padding
+    const lineIdx = Math.floor(offsetY / 24); // 24px line-height (leading-6)
+    const lineNum = lineIdx + 1;
+
+    if (lineNum >= 1 && lineNum <= lines.length && errorsByLine[lineNum]) {
+      setHoveredErrorLine(lineNum);
+    } else if (hoveredErrorLine !== null && !errorsByLine[lineNum]) {
+      setHoveredErrorLine(null);
+    }
+  };
+
+  const handleMouseLeaveEditor = () => {
+    if (!pinnedErrorLine) {
+      setHoveredErrorLine(null);
+    }
+  };
+
+  // Quick auto-fix helper
+  const handleApplyFix = (err: SyntaxErrorDetail) => {
+    const lineIdx = err.line - 1;
+    if (lineIdx < 0 || lineIdx >= lines.length) return;
+
+    const lineContent = lines[lineIdx];
+    let fixedLine = lineContent;
+
+    if (err.rule === 'missing-colon') {
+      fixedLine = lineContent.trimEnd() + ':';
+    } else if (err.rule === 'missing-semicolon') {
+      fixedLine = lineContent.trimEnd() + ';';
+    } else if (err.rule === 'invalid-keyword-python' && lineContent.includes('elseif')) {
+      fixedLine = lineContent.replace(/\belseif\b/, 'elif');
+    } else if (err.rule === 'invalid-keyword-python' && lineContent.includes('function')) {
+      fixedLine = lineContent.replace(/\bfunction\b/, 'def');
+    } else if (err.rule === 'invalid-declaration-python') {
+      fixedLine = lineContent.replace(/^(let|const|var)\s+/, '');
+    } else if (err.rule === 'python-case-sensitivity') {
+      fixedLine = lineContent
+        .replace(/\btrue\b/g, 'True')
+        .replace(/\bfalse\b/g, 'False')
+        .replace(/\bnull\b/g, 'None')
+        .replace(/\bnone\b/g, 'None');
+    } else if (err.rule === 'missing-function-parens') {
+      fixedLine = lineContent.replace(':', '():');
+    } else if (err.rule === 'unterminated-string') {
+      fixedLine = lineContent + (lineContent.includes('"') ? '"' : "'");
+    } else if (err.rule === 'invalid-keyword-js' && lineContent.includes('def ')) {
+      fixedLine = lineContent.replace(/^(\s*)def\s+/, '$1function ');
+    } else if (err.rule === 'invalid-keyword-js' && lineContent.includes('elif')) {
+      fixedLine = lineContent.replace(/\belif\b/, 'else if');
+    }
+
+    const newLines = [...lines];
+    newLines[lineIdx] = fixedLine;
+    onChangeCode(newLines.join('\n'));
+
+    setActiveFixLine(err.line);
+    setTimeout(() => {
+      setActiveFixLine(null);
+      setPinnedErrorLine(null);
+      setHoveredErrorLine(null);
+    }, 800);
+  };
+
+  const handleRunClick = () => {
+    if (syntaxErrors.length > 0) {
+      setSyntaxWarningBanner(`Found ${syntaxErrors.length} syntax ${syntaxErrors.length === 1 ? 'error' : 'errors'}. Offending Line ${syntaxErrors[0].line}: ${syntaxErrors[0].message}`);
+      setPinnedErrorLine(syntaxErrors[0].line);
+      setTimeout(() => {
+        setSyntaxWarningBanner(null);
+      }, 5000);
+      return;
+    }
+    setSyntaxWarningBanner(null);
+    setPinnedErrorLine(null);
+    onRunVisualize();
+  };
+
   // Syntax highlighting helper for code view
   const renderHighlightedLine = (text: string, lang: Language) => {
-    // Basic tokenizer for syntax presentation
     if (!text.trim()) return <span>&nbsp;</span>;
 
     // Check for comments
@@ -154,7 +264,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               onChange={(e) => onSelectProgram(e.target.value)}
               className="text-xs bg-[#0D1117] text-slate-200 border border-slate-800 rounded-lg px-2.5 py-1 pr-6 font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
             >
-              {programs.map(p => (
+              {programs.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title} ({p.language})
                 </option>
@@ -178,6 +288,26 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             </select>
             <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
           </div>
+
+          {/* Real-time Syntax Status Indicator */}
+          {syntaxErrors.length > 0 ? (
+            <button
+              id="syntax-error-pill-btn"
+              onClick={() => setPinnedErrorLine(pinnedErrorLine === syntaxErrors[0].line ? null : syntaxErrors[0].line)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/40 text-rose-300 text-[11px] font-semibold hover:bg-rose-500/25 transition-all cursor-pointer shadow-sm animate-pulse"
+              title="Click to view syntax errors and quick fixes"
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+              <span>
+                {syntaxErrors.length} {syntaxErrors.length === 1 ? 'Syntax Error' : 'Syntax Errors'} (Line {syntaxErrors[0].line})
+              </span>
+            </button>
+          ) : (
+            <div className="hidden lg:flex items-center gap-1 text-[11px] text-emerald-400 font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              <span>Syntax Valid</span>
+            </div>
+          )}
         </div>
 
         {/* Action Controls */}
@@ -185,7 +315,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <button
             id="editor-copy-btn"
             onClick={handleCopyCode}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1 cursor-pointer"
             title="Copy Code"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -194,7 +324,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <button
             id="editor-reset-btn"
             onClick={onReset}
-            className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-amber-300 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             title="Reset to initial state"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -203,46 +333,87 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <button
             id="editor-fullscreen-btn"
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors hidden sm:block"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors hidden sm:block cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Prominent Blue Run/Visualize Button */}
+          {/* Prominent Run/Visualize Button */}
           <button
             id="editor-run-visualize-btn"
-            onClick={onRunVisualize}
-            className="px-4 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-lg shadow-blue-500/20 flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer"
-            title="Run and visualize code execution step-by-step"
+            onClick={handleRunClick}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-lg ${
+              syntaxErrors.length > 0
+                ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-rose-500/20'
+                : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/20'
+            }`}
+            title={syntaxErrors.length > 0 ? 'Fix syntax errors before execution' : 'Run and visualize code execution step-by-step'}
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Run / Visualize</span>
+            {syntaxErrors.length > 0 ? (
+              <AlertTriangle className="w-3.5 h-3.5 fill-current text-white" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-current" />
+            )}
+            <span>{syntaxErrors.length > 0 ? 'Fix Syntax' : 'Run / Visualize'}</span>
           </button>
         </div>
       </div>
 
+      {/* Syntax Error Warning Banner */}
+      {syntaxWarningBanner && (
+        <div className="bg-rose-500/15 border-b border-rose-500/30 px-4 py-2 text-xs text-rose-200 flex items-center justify-between animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{syntaxWarningBanner}</span>
+          </div>
+          <button
+            onClick={() => setSyntaxWarningBanner(null)}
+            className="p-1 hover:bg-rose-500/20 rounded text-rose-300 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Editor Body */}
-      <div className="flex-1 relative flex overflow-hidden font-mono text-[13px] leading-6 bg-[#0D1117]">
+      <div 
+        ref={editorBodyRef}
+        onMouseLeave={handleMouseLeaveEditor}
+        className="flex-1 relative flex overflow-hidden font-mono text-[13px] leading-6 bg-[#0D1117]"
+      >
         {/* Line Numbers & Gutter Column */}
-        <div className="w-12 py-3 bg-[#0D1117] border-r border-slate-800 select-none flex flex-col shrink-0 text-slate-600 text-right pr-3 font-mono">
+        <div className="w-12 py-3 bg-[#0D1117] border-r border-slate-800 select-none flex flex-col shrink-0 text-slate-600 text-right pr-2.5 font-mono z-30">
           {lines.map((_, idx) => {
             const lineNum = idx + 1;
             const isCurrent = currentLine === lineNum;
             const hasBreakpoint = breakpoints.includes(lineNum);
+            const lineErrors = errorsByLine[lineNum];
+            const hasError = !!lineErrors && lineErrors.length > 0;
 
             return (
               <div
                 key={lineNum}
-                onClick={() => toggleBreakpoint(lineNum)}
-                className={`h-6 flex items-center justify-between cursor-pointer group hover:text-slate-300 transition-colors relative ${
-                  isCurrent ? 'text-blue-400 font-bold' : ''
+                onClick={() => {
+                  if (hasError) {
+                    setPinnedErrorLine(pinnedErrorLine === lineNum ? null : lineNum);
+                  } else {
+                    toggleBreakpoint(lineNum);
+                  }
+                }}
+                onMouseEnter={() => {
+                  if (hasError) setHoveredErrorLine(lineNum);
+                }}
+                className={`h-6 flex items-center justify-between cursor-pointer group transition-colors relative ${
+                  isCurrent ? 'text-blue-400 font-bold' : hasError ? 'text-rose-400 font-bold' : 'hover:text-slate-300'
                 }`}
-                title={`Line ${lineNum} - Click to toggle breakpoint`}
+                title={hasError ? `Line ${lineNum} Error: ${lineErrors[0].message}` : `Line ${lineNum} - Click to toggle breakpoint`}
               >
-                {/* Breakpoint Dot */}
-                <span className="w-2.5 h-2.5 flex items-center justify-center">
-                  {hasBreakpoint ? (
+                {/* Error Icon OR Breakpoint Dot */}
+                <span className="w-3 h-3 flex items-center justify-center">
+                  {hasError ? (
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-400 animate-pulse drop-shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
+                  ) : hasBreakpoint ? (
                     <span className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]" />
                   ) : (
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500/0 group-hover:bg-rose-500/40 transition-colors" />
@@ -250,11 +421,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 </span>
 
                 {/* Line Number */}
-                <span className="text-[12px]">{lineNum}</span>
+                <span className={`text-[12px] ${hasError ? 'text-rose-300 font-bold' : ''}`}>
+                  {lineNum}
+                </span>
 
-                {/* Gutter active indicator arrow */}
+                {/* Gutter active execution indicator arrow */}
                 {isCurrent && (
-                  <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-blue-400" />
+                  <div className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-blue-400" />
                 )}
               </div>
             );
@@ -263,16 +436,28 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
         {/* Code Content & Overlay Layer */}
         <div className="flex-1 relative overflow-auto p-3">
-          {/* Active Line Highlight Background */}
+          {/* Line Highlights Background (Execution Current Line & Syntax Error Lines) */}
           {lines.map((_, idx) => {
             const lineNum = idx + 1;
             const isCurrent = currentLine === lineNum;
-            if (!isCurrent) return null;
+            const lineErrors = errorsByLine[lineNum];
+            const hasError = !!lineErrors && lineErrors.length > 0;
+            const isHovered = hoveredErrorLine === lineNum || pinnedErrorLine === lineNum;
+
+            if (!isCurrent && !hasError) return null;
 
             return (
               <div
-                key={`highlight-${lineNum}`}
-                className="absolute left-0 right-0 h-6 bg-blue-500/15 border-l-2 border-blue-500 pointer-events-none z-0"
+                key={`line-bg-${lineNum}`}
+                className={`absolute left-0 right-0 h-6 pointer-events-none z-0 transition-colors duration-150 ${
+                  isCurrent 
+                    ? 'bg-blue-500/15 border-l-2 border-blue-500' 
+                    : hasError 
+                      ? isHovered 
+                        ? 'bg-rose-500/20 border-l-2 border-rose-500' 
+                        : 'bg-rose-500/10 border-l-2 border-rose-500/60'
+                      : ''
+                }`}
                 style={{ top: `${idx * 24 + 12}px` }}
               />
             );
@@ -283,30 +468,133 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             {lines.map((lineText, idx) => {
               const lineNum = idx + 1;
               const isCurrent = currentLine === lineNum;
+              const lineErrors = errorsByLine[lineNum];
+              const hasError = !!lineErrors && lineErrors.length > 0;
 
               return (
                 <div
                   key={idx}
                   className={`h-6 flex items-center whitespace-pre px-2 transition-colors ${
-                    isCurrent ? 'text-white font-medium drop-shadow-sm' : 'text-slate-300'
+                    isCurrent 
+                      ? 'text-white font-medium drop-shadow-sm' 
+                      : hasError 
+                        ? 'text-slate-200' 
+                        : 'text-slate-300'
                   }`}
                 >
-                  {renderHighlightedLine(lineText, language)}
+                  <span
+                    className={
+                      hasError
+                        ? 'underline decoration-wavy decoration-rose-500/90 underline-offset-4 decoration-1 inline-block'
+                        : ''
+                    }
+                  >
+                    {renderHighlightedLine(lineText, language)}
+                  </span>
                 </div>
               );
             })}
           </div>
 
-          {/* Transparent editable textarea directly synced */}
+          {/* Transparent editable textarea directly synced with real-time error hover tracking */}
           <textarea
             ref={textareaRef}
             value={code}
             onChange={(e) => onChangeCode(e.target.value)}
             onKeyDown={handleKeyDown}
+            onMouseMove={handleMouseMoveTextarea}
             spellCheck={false}
             className="absolute inset-0 p-3 pl-5 bg-transparent text-transparent caret-blue-400 resize-none font-mono text-[13px] leading-6 focus:outline-none z-20 whitespace-pre overflow-hidden"
             style={{ tabSize: 4 }}
           />
+
+          {/* Interactive Error Tooltip Floating Card */}
+          {activeErrorLine && activeErrors.length > 0 && (
+            <div
+              id={`error-tooltip-line-${activeErrorLine}`}
+              className="absolute z-40 max-w-md w-full bg-[#161E27] border border-rose-500/40 rounded-xl shadow-2xl p-3.5 space-y-2.5 text-xs select-none backdrop-blur-md animate-in fade-in duration-150"
+              style={{
+                top: `${Math.min(Math.max(12, (activeErrorLine - 1) * 24 + 36), (lines.length * 24) + 12)}px`,
+                left: '28px',
+              }}
+            >
+              {/* Tooltip Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-rose-300">
+                    Syntax Error on Line {activeErrorLine}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                    {activeErrors[0].rule}
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setPinnedErrorLine(null);
+                    setHoveredErrorLine(null);
+                  }}
+                  className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 cursor-pointer"
+                  title="Close Tooltip"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Error Messages List */}
+              <div className="space-y-2">
+                {activeErrors.map((err, errIdx) => (
+                  <div key={errIdx} className="space-y-2">
+                    <p className="text-slate-200 font-medium leading-relaxed">
+                      {err.message}
+                    </p>
+
+                    {/* CS Learning Suggestion Card */}
+                    {err.suggestion && (
+                      <div className="p-2.5 rounded-lg bg-[#0D1117] border border-amber-500/30 text-amber-200 flex items-start gap-2">
+                        <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <span className="font-semibold text-amber-300 text-[11px] block">
+                            Student Tip / Suggested Fix:
+                          </span>
+                          <span className="text-[11px] text-slate-300 font-mono break-all">
+                            {err.suggestion}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Fix Button */}
+                    <div className="pt-1 flex items-center justify-between">
+                      <button
+                        onClick={() => handleApplyFix(err)}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+                      >
+                        {activeFixLine === err.line ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-300" />
+                            <span>Fixed!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Wrench className="w-3.5 h-3.5" />
+                            <span>Apply Fix Automatically</span>
+                          </>
+                        )}
+                      </button>
+
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {language.toUpperCase()} Linter
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -319,6 +607,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             <span className="text-blue-400 font-semibold flex items-center gap-1">
               <CircleDot className="w-3 h-3 text-blue-400" />
               Exec Line: {currentLine}
+            </span>
+          )}
+          {syntaxErrors.length > 0 ? (
+            <span className="text-rose-400 font-semibold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => setPinnedErrorLine(syntaxErrors[0].line)}>
+              <AlertCircle className="w-3 h-3 text-rose-400" />
+              {syntaxErrors.length} {syntaxErrors.length === 1 ? 'Error' : 'Errors'} Found
+            </span>
+          ) : (
+            <span className="text-emerald-400 font-medium flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              All Syntax Valid
             </span>
           )}
         </div>

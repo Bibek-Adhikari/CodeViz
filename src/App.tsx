@@ -125,6 +125,49 @@ export default function App() {
     setExecStatus('idle');
   };
 
+  // Export Execution Trace as JSON for offline study
+  const handleExportTrace = () => {
+    const stepsToExport = executionSteps.length > 0 ? executionSteps : currentProgram.steps;
+    const currentProgTitle = currentProgram?.title || 'Execution Trace';
+
+    const traceData = {
+      app: 'Interactive Code Execution & Memory Visualizer',
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      program: {
+        id: selectedProgramId,
+        title: currentProgTitle,
+        language: language,
+        complexity: currentProgram?.complexity || { time: 'O(N)', space: 'O(N)' },
+        totalSteps: stepsToExport.length,
+        code: code,
+      },
+      currentStepIndex: currentStepIndex,
+      trace: stepsToExport.map((step, idx) => ({
+        stepIndex: idx,
+        stepNumber: idx + 1,
+        line: step.line,
+        event: step.event,
+        explanation: step.explanation,
+        callStack: step.callStack,
+        heap: step.heap,
+        stdout: step.stdout,
+        highlightVariables: step.highlightVariables || [],
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(traceData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement('a');
+    const sanitizedTitle = currentProgTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    downloadAnchor.href = url;
+    downloadAnchor.download = `execution-trace-${sanitizedTitle}.json`;
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
   // Toggle Auto-play
   const handleTogglePlay = () => {
     if (currentStepIndex >= executionSteps.length - 1) {
@@ -295,6 +338,7 @@ export default function App() {
               onTogglePlay={handleTogglePlay}
               onReset={handleReset}
               onChangeSpeed={setSpeed}
+              onExportTrace={handleExportTrace}
               status={execStatus}
               currentLine={currentLine}
               stepExplanation={currentStep?.explanation}

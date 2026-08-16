@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Play, 
   Pause, 
@@ -9,7 +9,10 @@ import {
   Zap,
   Activity,
   CheckCircle2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Download,
+  Check,
+  FileJson
 } from 'lucide-react';
 
 interface ExecutionControlsProps {
@@ -22,6 +25,7 @@ interface ExecutionControlsProps {
   onTogglePlay: () => void;
   onReset: () => void;
   onChangeSpeed: (speed: number) => void;
+  onExportTrace?: () => void;
   status: 'idle' | 'running' | 'paused' | 'completed';
   currentLine?: number | null;
   stepExplanation?: string;
@@ -37,12 +41,22 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
   onTogglePlay,
   onReset,
   onChangeSpeed,
+  onExportTrace,
   status,
   currentLine,
   stepExplanation,
 }) => {
+  const [isExported, setIsExported] = useState(false);
   const currentStepNum = totalSteps > 0 ? currentStepIndex + 1 : 0;
   const progressPercent = totalSteps > 1 ? (currentStepIndex / (totalSteps - 1)) * 100 : 0;
+
+  const handleExportClick = () => {
+    if (onExportTrace) {
+      onExportTrace();
+    }
+    setIsExported(true);
+    setTimeout(() => setIsExported(false), 2000);
+  };
 
   return (
     <div className="rounded-xl border border-slate-800/60 bg-[#121820] shadow-lg p-3 select-none flex flex-col gap-2.5">
@@ -146,26 +160,50 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
           </div>
         </div>
 
-        {/* Right side: Speed Selector */}
-        <div className="flex items-center gap-1 bg-slate-900/60 p-0.5 rounded-lg border border-slate-800">
-          <span className="text-[10px] text-slate-400 font-semibold px-1.5 flex items-center gap-1">
-            <Zap className="w-3 h-3 text-amber-400" />
-            Speed
-          </span>
-          {[1, 2, 5].map((s) => (
-            <button
-              key={s}
-              id={`speed-btn-${s}x`}
-              onClick={() => onChangeSpeed(s)}
-              className={`px-2 py-0.5 text-xs font-mono font-medium rounded transition-colors cursor-pointer ${
-                speed === s
-                  ? 'bg-blue-600 text-white font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              {s}×
-            </button>
-          ))}
+        {/* Right side: Export Execution Trace + Speed Selector */}
+        <div className="flex items-center gap-2">
+          {/* Export Execution Trace Button */}
+          <button
+            id="exec-ctrl-export-trace"
+            onClick={handleExportClick}
+            className="px-2.5 py-1.5 rounded-lg bg-[#161E27] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+            title="Download current execution trace as JSON for offline study"
+          >
+            {isExported ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-300 font-semibold text-[11px]">Exported!</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden sm:inline text-[11px]">Export Trace</span>
+                <span className="sm:hidden text-[11px]">Trace</span>
+              </>
+            )}
+          </button>
+
+          {/* Speed Selector */}
+          <div className="flex items-center gap-1 bg-slate-900/60 p-0.5 rounded-lg border border-slate-800">
+            <span className="text-[10px] text-slate-400 font-semibold px-1.5 flex items-center gap-1">
+              <Zap className="w-3 h-3 text-amber-400" />
+              Speed
+            </span>
+            {[1, 2, 5].map((s) => (
+              <button
+                key={s}
+                id={`speed-btn-${s}x`}
+                onClick={() => onChangeSpeed(s)}
+                className={`px-2 py-0.5 text-xs font-mono font-medium rounded transition-colors cursor-pointer ${
+                  speed === s
+                    ? 'bg-blue-600 text-white font-bold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                {s}×
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
