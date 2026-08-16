@@ -1,10 +1,39 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --bg-app: #0A0E14;
+    --bg-header: rgba(10, 14, 20, 0.85);
+    --bg-sidebar: #0D1117;
+    --bg-card: #121820;
+    --bg-card-header: #161E27;
+    --bg-input: #0D1117;
+    --border-color: rgba(51, 65, 85, 0.6);
+    --border-subtle: rgba(51, 65, 85, 0.35);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+
+  html.light {
+    --bg-app: #F4F6F9;
+    --bg-header: rgba(255, 255, 255, 0.9);
+    --bg-sidebar: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --bg-card-header: #F8FAFC;
+    --bg-input: #F1F5F9;
+    --border-color: rgba(203, 213, 225, 0.9);
+    --border-subtle: rgba(226, 232, 240, 0.9);
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #0A0E14;
-    color: #cbd5e1;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   code, pre, .font-mono {
@@ -12,23 +41,36 @@
   }
 }
 
-/* Custom sleek dark scrollbar */
+/* Custom sleek scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
-::-webkit-scrollbar-track {
+html.dark ::-webkit-scrollbar-track {
   background: rgba(15, 20, 27, 0.6);
 }
 
-::-webkit-scrollbar-thumb {
+html.dark ::-webkit-scrollbar-thumb {
   background: rgba(51, 65, 85, 0.5);
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(71, 85, 105, 0.8);
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.8);
+  border-radius: 4px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.9);
 }
 
 /* Pulsing subtle glow for execution indicators */
@@ -42,16 +84,31 @@
 }
 
 /* Glass panel styling */
-.glass-panel {
+html.dark .glass-panel {
   background: rgba(18, 24, 32, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(51, 65, 85, 0.4);
 }
 
-.glass-panel-subtle {
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+html.dark .glass-panel-subtle {
   background: rgba(15, 20, 27, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+html.light .glass-panel-subtle {
+  background: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }

@@ -1,5 +1,7 @@
 export type Language = 'python' | 'java' | 'cpp' | 'javascript';
 
+export type Theme = 'dark' | 'light';
+
 export type VariableType = 'int' | 'float' | 'string' | 'bool' | 'list' | 'dict' | 'pointer' | 'object' | 'none';
 
 export interface VariableValue {
