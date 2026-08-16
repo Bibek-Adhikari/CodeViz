@@ -1,0 +1,6 @@
+{
+  "name": "CodeViz Study Hub",
+  "description": "Interactive visual code execution laboratory and study materials workspace for CS and IT students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
