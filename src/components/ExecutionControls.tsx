@@ -5,16 +5,19 @@ import {
   SkipBack, 
   SkipForward, 
   RotateCcw, 
-  Zap,
-  CheckCircle2,
-  Download,
-  Check,
-  BrainCircuit,
-  Code2,
-  ChevronDown,
-  MoreHorizontal,
-  FileJson,
-  Keyboard,
+  Download, 
+  Check, 
+  BrainCircuit, 
+  ChevronDown, 
+  MoreHorizontal, 
+  FileJson, 
+  Keyboard, 
+  Sliders, 
+  FastForward, 
+  ChevronLeft, 
+  ChevronRight,
+  Activity,
+  Sparkles,
   Info
 } from 'lucide-react';
 import { ExecutionProgram } from '../types';
@@ -67,6 +70,8 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
 
   const currentStepNum = totalSteps > 0 ? currentStepIndex + 1 : 0;
   const progressPercent = totalSteps > 1 ? (currentStepIndex / (totalSteps - 1)) * 100 : 0;
+  const isAtStart = currentStepIndex <= 0;
+  const isAtEnd = currentStepIndex >= totalSteps - 1;
 
   // Close more menu on click outside
   useEffect(() => {
@@ -88,21 +93,21 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
   };
 
   return (
-    <div className={`rounded-xl border shadow-md p-2.5 sm:p-3 select-none flex flex-col gap-2 transition-colors ${
+    <div className={`rounded-xl border shadow-md p-3 select-none flex flex-col gap-2.5 transition-colors ${
       isDark ? 'border-slate-800/80 bg-[#121820]' : 'border-slate-200 bg-white'
     }`}>
-      {/* Top Controls Row */}
-      <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-        {/* Left Side: Program Preset + Core Navigation Buttons */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Preset Selector Dropdown (Compact) */}
-          {programs && onSelectProgram && selectedProgramId && (
-            <div className="relative flex items-center mr-1">
+      {/* Primary Control Bar with Symmetrical Layout & Centralized Stepper */}
+      <div className="flex items-center justify-between gap-2.5 flex-wrap md:flex-nowrap">
+        
+        {/* LEFT SECTION: Program Preset Selector & Context Indicator */}
+        <div className="flex items-center gap-2 min-w-0 order-1 md:w-1/3">
+          {programs && onSelectProgram && selectedProgramId ? (
+            <div className="relative flex items-center min-w-0">
               <select
                 id="controls-program-select"
                 value={selectedProgramId}
                 onChange={(e) => onSelectProgram(e.target.value)}
-                className={`text-[0.75rem] font-medium border rounded-lg pl-2 pr-6 py-1.5 appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-xs max-w-[8.5rem] sm:max-w-[12rem] truncate transition-colors ${
+                className={`text-xs font-semibold border rounded-lg pl-2.5 pr-7 py-1.5 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs max-w-[11rem] sm:max-w-[13rem] truncate transition-colors ${
                   isDark
                     ? 'bg-[#0D1117] text-slate-200 border-slate-800 hover:border-slate-700'
                     : 'bg-slate-50 text-slate-800 border-slate-300 hover:border-slate-400'
@@ -115,129 +120,163 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-1.5 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 pointer-events-none" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+              <Activity className="w-3.5 h-3.5 text-blue-500" />
+              <span>Execution Engine</span>
             </div>
           )}
 
-          {/* Reset Button */}
-          <Tooltip content="Reset Execution" shortcut="R" position="top">
-            <button
-              id="exec-ctrl-reset"
-              onClick={onReset}
-              className={`p-1.5 sm:p-2 rounded-lg border transition-all active:scale-95 cursor-pointer ${
-                isDark
-                  ? 'bg-[#161E27] hover:bg-slate-800 text-slate-400 hover:text-white border-slate-800'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200'
-              }`}
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          {/* Step Backward */}
-          <Tooltip content="Step Backward" shortcut="←" position="top">
-            <button
-              id="exec-ctrl-step-back"
-              onClick={onStepBack}
-              disabled={currentStepIndex <= 0}
-              className={`p-1.5 sm:p-2 rounded-lg transition-all border ${
-                currentStepIndex <= 0
-                  ? isDark
-                    ? 'bg-slate-900/30 text-slate-700 border-slate-900 cursor-not-allowed'
-                    : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                  : isDark
-                  ? 'bg-[#161E27] hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800 active:scale-95 cursor-pointer'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200 active:scale-95 cursor-pointer'
-              }`}
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          {/* Play / Pause Toggle Button */}
-          <Tooltip content={isPlaying ? 'Pause Execution' : 'Auto-Play Execution'} shortcut="Space" position="top">
-            <button
-              id="exec-ctrl-play-pause"
-              onClick={onTogglePlay}
-              className={`px-3 py-1.5 rounded-lg font-bold text-[0.75rem] flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer ${
-                isPlaying
-                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
-              }`}
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span className="hidden sm:inline">Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span className="hidden sm:inline">Play</span>
-                </>
-              )}
-            </button>
-          </Tooltip>
-
-          {/* Step Forward */}
-          <Tooltip content="Step Forward" shortcut="→" position="top">
-            <button
-              id="exec-ctrl-step-forward"
-              onClick={onStepForward}
-              disabled={currentStepIndex >= totalSteps - 1}
-              className={`p-1.5 sm:p-2 rounded-lg transition-all border ${
-                currentStepIndex >= totalSteps - 1
-                  ? isDark
-                    ? 'bg-slate-900/30 text-slate-700 border-slate-900 cursor-not-allowed'
-                    : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                  : isDark
-                  ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border-blue-500/30 active:scale-95 cursor-pointer'
-                  : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 active:scale-95 cursor-pointer'
-              }`}
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
+          {/* Current Line Indicator */}
+          {currentLine && (
+            <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold hidden sm:inline-flex items-center gap-1 ${
+              isDark ? 'bg-blue-950/60 text-blue-300 border border-blue-800/60' : 'bg-blue-50 text-blue-700 border border-blue-200'
+            }`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Line {currentLine}
+            </span>
+          )}
         </div>
 
-        {/* Center: Compact Step Badge & Status */}
-        <div className="flex items-center gap-1.5">
-          <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[0.75rem] font-mono ${
-            isDark ? 'bg-[#0D1117] border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+        {/* CENTER SECTION: PROMINENT CENTRALIZED STEP & PLAYBACK CONTROLS */}
+        <div className="flex items-center justify-center gap-2 order-3 md:order-2 w-full md:w-1/3 py-0.5">
+          <div className={`flex items-center gap-1.5 p-1 rounded-xl border shadow-inner ${
+            isDark ? 'bg-[#0A0E14] border-slate-800/90' : 'bg-slate-100 border-slate-300/80'
           }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span>Step</span>
-            <span className="font-bold text-blue-600 dark:text-blue-400">{currentStepNum}</span>
-            <span className="text-slate-400">/</span>
-            <span className="font-semibold">{totalSteps}</span>
-          </div>
+            {/* Reset Button */}
+            <Tooltip content="Reset to Beginning" shortcut="R" position="top">
+              <button
+                id="exec-ctrl-reset"
+                onClick={onReset}
+                className={`p-2 rounded-lg border transition-all active:scale-95 cursor-pointer ${
+                  isDark
+                    ? 'bg-[#141B24] hover:bg-slate-800 text-slate-400 hover:text-white border-slate-800'
+                    : 'bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border-slate-200 shadow-xs'
+                }`}
+                aria-label="Reset execution"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
 
-          <div className="hidden sm:flex items-center">
+            {/* Step Backward */}
+            <Tooltip content="Step Backward (Previous Line)" shortcut="←" position="top">
+              <button
+                id="exec-ctrl-step-back"
+                onClick={onStepBack}
+                disabled={isAtStart}
+                className={`px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center gap-1 transition-all border ${
+                  isAtStart
+                    ? isDark
+                      ? 'bg-slate-900/40 text-slate-700 border-slate-900 cursor-not-allowed'
+                      : 'bg-slate-200/60 text-slate-400 border-slate-200 cursor-not-allowed'
+                    : isDark
+                    ? 'bg-[#161F2C] hover:bg-slate-800 text-slate-200 hover:text-white border-slate-700/80 active:scale-95 cursor-pointer shadow-xs'
+                    : 'bg-white hover:bg-slate-50 text-slate-800 hover:text-slate-950 border-slate-300 active:scale-95 cursor-pointer shadow-xs'
+                }`}
+                aria-label="Step backward"
+              >
+                <SkipBack className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-[11px]">Prev</span>
+              </button>
+            </Tooltip>
+
+            {/* Central Primary Play / Pause Button */}
+            <Tooltip content={isPlaying ? 'Pause Execution' : isAtEnd ? 'Replay Execution' : 'Auto-Play Execution'} shortcut="Space" position="top">
+              <button
+                id="exec-ctrl-play-pause"
+                onClick={onTogglePlay}
+                className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer min-w-[5.2rem] justify-center ${
+                  isPlaying
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/25 ring-2 ring-amber-400/30'
+                    : isAtEnd
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25 ring-2 ring-blue-500/20'
+                }`}
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-current" />
+                    <span>Pause</span>
+                  </>
+                ) : isAtEnd ? (
+                  <>
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Replay</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current ml-0.5" />
+                    <span>Play</span>
+                  </>
+                )}
+              </button>
+            </Tooltip>
+
+            {/* Step Forward */}
+            <Tooltip content="Step Forward (Next Line)" shortcut="→" position="top">
+              <button
+                id="exec-ctrl-step-forward"
+                onClick={onStepForward}
+                disabled={isAtEnd}
+                className={`px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center gap-1 transition-all border ${
+                  isAtEnd
+                    ? isDark
+                      ? 'bg-slate-900/40 text-slate-700 border-slate-900 cursor-not-allowed'
+                      : 'bg-slate-200/60 text-slate-400 border-slate-200 cursor-not-allowed'
+                    : isDark
+                    ? 'bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 hover:text-white border-blue-500/40 active:scale-95 cursor-pointer shadow-xs'
+                    : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300 active:scale-95 cursor-pointer shadow-xs'
+                }`}
+                aria-label="Step forward"
+              >
+                <span className="hidden sm:inline text-[11px]">Next</span>
+                <SkipForward className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+
+            {/* Step Counter Badge */}
+            <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-mono text-xs ${
+              isDark ? 'bg-[#0E141C] border-slate-800 text-slate-300' : 'bg-white border-slate-300 text-slate-700'
+            }`}>
+              <span className="font-semibold text-slate-400 text-[10.5px]">Step</span>
+              <span className="font-bold text-blue-600 dark:text-blue-400">{currentStepNum}</span>
+              <span className="text-slate-500">/</span>
+              <span className="font-medium text-slate-400">{totalSteps}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT SECTION: Playback Speed, Quiz & Export Utilities */}
+        <div className="flex items-center justify-end gap-1.5 order-2 md:order-3 md:w-1/3">
+          {/* Status Badge */}
+          <div className="hidden lg:flex items-center mr-1">
             {status === 'running' || isPlaying ? (
-              <span className="flex items-center gap-1 text-[0.6875rem] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-md">
-                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-ping" />
-                Running
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                Live Step
               </span>
-            ) : status === 'completed' || currentStepIndex === totalSteps - 1 ? (
-              <span className="flex items-center gap-1 text-[0.6875rem] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-2 py-0.5 rounded-md">
-                <CheckCircle2 className="w-3 h-3" />
+            ) : status === 'completed' || isAtEnd ? (
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-2.5 py-1 rounded-lg">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
                 Done
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-[0.6875rem] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2 py-0.5 rounded-md">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2.5 py-1 rounded-lg">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
                 Paused
               </span>
             )}
           </div>
-        </div>
 
-        {/* Right Side: Speed Selector & More Actions Popover */}
-        <div className="flex items-center gap-1.5 shrink-0">
           {/* Speed Selector (Compact Pill Group) */}
           <div className={`flex items-center p-0.5 rounded-lg border ${
             isDark ? 'bg-[#0D1117] border-slate-800' : 'bg-slate-50 border-slate-200'
           }`}>
-            <span className="text-[0.625rem] text-slate-400 font-semibold px-1 hidden sm:inline">
+            <span className="text-[10px] text-slate-400 font-semibold px-1 hidden xl:inline">
               Speed
             </span>
             {[1, 2, 5].map((s) => (
@@ -245,7 +284,7 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
                 key={s}
                 id={`speed-btn-${s}x`}
                 onClick={() => onChangeSpeed(s)}
-                className={`px-1.5 py-0.5 text-[0.6875rem] font-mono font-semibold rounded transition-colors cursor-pointer ${
+                className={`px-1.5 py-0.5 text-[11px] font-mono font-semibold rounded transition-colors cursor-pointer ${
                   speed === s
                     ? 'bg-blue-600 text-white shadow-xs'
                     : isDark
@@ -259,7 +298,21 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
             ))}
           </div>
 
-          {/* Export JSON Trace (Compact Icon Button) */}
+          {/* AI Quiz Button (Direct Access) */}
+          {onOpenQuiz && (
+            <Tooltip content="Launch AI Logic Quiz" position="top">
+              <button
+                id="exec-ctrl-quiz-btn"
+                onClick={onOpenQuiz}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 transition-colors cursor-pointer shadow-xs"
+              >
+                <BrainCircuit className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Quiz</span>
+              </button>
+            </Tooltip>
+          )}
+
+          {/* Export JSON Trace */}
           <Tooltip content="Export execution trace JSON" position="top">
             <button
               id="exec-ctrl-export-trace"
@@ -271,6 +324,7 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
                   ? 'bg-[#161E27] hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200'
               }`}
+              aria-label="Export Trace JSON"
             >
               {isExported ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Download className="w-3.5 h-3.5" />}
             </button>
@@ -278,7 +332,7 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
 
           {/* More Actions Popover Menu */}
           <div className="relative" ref={moreMenuRef}>
-            <Tooltip content="More execution tools" position="top">
+            <Tooltip content="More options & shortcuts" position="top">
               <button
                 id="exec-ctrl-more-btn"
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
@@ -291,6 +345,7 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
                     ? 'bg-[#161E27] hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
                     : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200'
                 }`}
+                aria-label="More options"
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
@@ -298,7 +353,7 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
 
             {/* Dropdown Menu */}
             {showMoreMenu && (
-              <div className={`absolute right-0 bottom-full mb-1.5 w-52 rounded-xl shadow-2xl border p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 ${
+              <div className={`absolute right-0 bottom-full mb-1.5 w-56 rounded-xl shadow-2xl border p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 ${
                 isDark
                   ? 'bg-[#161E27] border-slate-700/80 text-slate-200'
                   : 'bg-white border-slate-200 text-slate-800 shadow-slate-900/15'
@@ -333,11 +388,24 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
 
                 <div className={`h-px my-1 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
 
-                <div className="px-2.5 py-1 text-[10px] text-slate-500 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Keyboard className="w-3 h-3" /> Shortcuts
-                  </span>
-                  <span className="font-mono">← / → / Space</span>
+                <div className="px-2.5 py-1 text-[10px] text-slate-500 flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <Keyboard className="w-3 h-3" /> Shortcuts:
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between font-mono text-[9.5px]">
+                    <span>Step Back / Fwd:</span>
+                    <span className="bg-slate-200 dark:bg-slate-800 px-1 rounded">← / →</span>
+                  </div>
+                  <div className="flex items-center justify-between font-mono text-[9.5px]">
+                    <span>Play / Pause:</span>
+                    <span className="bg-slate-200 dark:bg-slate-800 px-1 rounded">Space</span>
+                  </div>
+                  <div className="flex items-center justify-between font-mono text-[9.5px]">
+                    <span>Reset Trace:</span>
+                    <span className="bg-slate-200 dark:bg-slate-800 px-1 rounded">R</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -355,13 +423,13 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
 
       {/* Step Explanation Banner (Slim, High Contrast) */}
       {stepExplanation && (
-        <div className={`px-2.5 py-1 rounded-lg border flex items-center gap-2 text-xs transition-colors ${
+        <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 text-xs transition-colors ${
           isDark
             ? 'bg-blue-950/20 border-blue-500/20 text-slate-200'
             : 'bg-blue-50/70 border-blue-200 text-slate-800'
         }`}>
           {currentLine && (
-            <span className="px-1.5 py-0.2 rounded bg-blue-600 text-white font-mono text-[10px] font-bold shrink-0">
+            <span className="px-1.5 py-0.5 rounded bg-blue-600 text-white font-mono text-[10.5px] font-bold shrink-0 shadow-xs">
               L{currentLine}
             </span>
           )}

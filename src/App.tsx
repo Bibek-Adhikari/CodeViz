@@ -46,7 +46,7 @@ export default function App() {
   const [execStatus, setExecStatus] = useState<'idle' | 'running' | 'paused' | 'completed'>('running');
 
   // Persistent Pinned Variables Watchlist
-  const [pinnedVarNames, setPinnedVarNames] = useState<string[]>(['n', 'ans', 'count']);
+  const [pinnedVarNames, setPinnedVarNames] = useState<string[]>(['x', 'y', 'z']);
 
   // Study Materials state
   const [materials, setMaterials] = useState<StudyMaterial[]>(INITIAL_STUDY_MATERIALS);
