@@ -11,12 +11,14 @@ import {
   HelpCircle,
   CheckCircle2,
   Cpu,
-  GraduationCap
+  GraduationCap,
+  BrainCircuit
 } from 'lucide-react';
 
 interface HeaderProps {
   onOpenSearch: () => void;
   onOpenAIExplainer: () => void;
+  onOpenQuiz?: () => void;
   onOpenSettings: () => void;
   activeViewTab: 'all' | 'code' | 'memory' | 'console';
   setActiveViewTab: (tab: 'all' | 'code' | 'memory' | 'console') => void;
@@ -26,6 +28,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   onOpenAIExplainer,
+  onOpenQuiz,
   onOpenSettings,
   activeViewTab,
   setActiveViewTab,
@@ -95,18 +98,6 @@ export const Header: React.FC<HeaderProps> = ({
             Workspace
           </button>
           <button
-            id="view-tab-code"
-            onClick={() => setActiveViewTab('code')}
-            className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
-              activeViewTab === 'code'
-                ? 'bg-blue-600 text-white shadow-sm font-semibold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-          >
-            <Code2 className="w-3.5 h-3.5" />
-            Code
-          </button>
-          <button
             id="view-tab-memory"
             onClick={() => setActiveViewTab('memory')}
             className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
@@ -116,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
-            Memory
+            Memory Stack
           </button>
           <button
             id="view-tab-console"
@@ -128,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
-            Console
+            Console Output
           </button>
         </div>
       </div>
@@ -153,12 +144,25 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="header-ai-tutor-btn"
           onClick={onOpenAIExplainer}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-sm transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-sm transition-all cursor-pointer"
           title="Open AI Code Tutor for in-depth step analysis"
         >
           <Sparkles className="w-3.5 h-3.5 text-blue-400" />
           <span className="hidden sm:inline">AI Step Tutor</span>
         </button>
+
+        {/* AI Quiz Me Button */}
+        {onOpenQuiz && (
+          <button
+            id="header-quiz-me-btn"
+            onClick={onOpenQuiz}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 hover:from-amber-500/25 hover:to-orange-500/25 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/10 transition-all cursor-pointer active:scale-95"
+            title="Generate a 3-question AI quiz to test understanding of current logic flow"
+          >
+            <BrainCircuit className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span>Quiz Me</span>
+          </button>
+        )}
 
         <div className="flex items-center gap-2 border-l border-slate-800/80 pl-3">
           {/* Notifications */}

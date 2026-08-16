@@ -15,10 +15,8 @@ import {
 import { generateExecutionSteps } from './utils/codeInterpreter';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { CodeEditor } from './components/CodeEditor';
 import { ExecutionControls } from './components/ExecutionControls';
 import { ExecutionTimeline } from './components/ExecutionTimeline';
-import { CodePanel } from './components/panels/CodePanel';
 import { MemoryStatePanel } from './components/panels/MemoryStatePanel';
 import { ConsolePanel } from './components/panels/ConsolePanel';
 import { PdfViewerModal } from './components/modals/PdfViewerModal';
@@ -26,6 +24,7 @@ import { ImagePreviewModal } from './components/modals/ImagePreviewModal';
 import { AIExplainerModal } from './components/modals/AIExplainerModal';
 import { SearchModal } from './components/modals/SearchModal';
 import { SettingsModal } from './components/modals/SettingsModal';
+import { AIQuizModal } from './components/modals/AIQuizModal';
 import { Sparkles, Layers, Cpu, Terminal, HelpCircle, Code2, AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -42,6 +41,9 @@ export default function App() {
   const [speed, setSpeed] = useState<number>(1);
   const [execStatus, setExecStatus] = useState<'idle' | 'running' | 'paused' | 'completed'>('running');
 
+  // Persistent Pinned Variables Watchlist
+  const [pinnedVarNames, setPinnedVarNames] = useState<string[]>(['n', 'ans', 'count']);
+
   // Study Materials state
   const [materials, setMaterials] = useState<StudyMaterial[]>(INITIAL_STUDY_MATERIALS);
   const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
@@ -50,10 +52,17 @@ export default function App() {
   // Modals state
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAIExplainerOpen, setIsAIExplainerOpen] = useState<boolean>(false);
+  const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [activeViewTab, setActiveViewTab] = useState<'all' | 'code' | 'memory' | 'console'>('all');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleTogglePinVariable = (varName: string) => {
+    setPinnedVarNames((prev) =>
+      prev.includes(varName) ? prev.filter((v) => v !== varName) : [...prev, varName]
+    );
+  };
 
   // Sync program changes
   const handleSelectProgram = (programId: string) => {
@@ -288,6 +297,7 @@ export default function App() {
       <Header
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAIExplainer={() => setIsAIExplainerOpen(true)}
+        onOpenQuiz={() => setIsQuizOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         activeViewTab={activeViewTab}
         setActiveViewTab={setActiveViewTab}
@@ -308,26 +318,8 @@ export default function App() {
 
         {/* Primary Workspace Zone */}
         <main className="flex-1 flex flex-col min-w-0 overflow-y-auto p-4 sm:p-5 gap-4 bg-[#0A0E14]">
-          {/* Top Section: Code Editor & Execution Controls */}
-          <div className="grid grid-cols-1 gap-3 shrink-0">
-            {/* Editor Panel */}
-            <div className="min-h-[290px] h-[34vh] max-h-[420px]">
-              <CodeEditor
-                code={code}
-                onChangeCode={setCode}
-                language={language}
-                onChangeLanguage={setLanguage}
-                currentLine={currentLine}
-                onRunVisualize={handleRunVisualize}
-                onReset={handleReset}
-                programs={programs}
-                selectedProgramId={selectedProgramId}
-                onSelectProgram={handleSelectProgram}
-                isRunning={isPlaying}
-              />
-            </div>
-
-            {/* Execution Controls Bar */}
+          {/* Top Section: Program Selection & Execution Controls */}
+          <div className="shrink-0">
             <ExecutionControls
               currentStepIndex={currentStepIndex}
               totalSteps={executionSteps.length}
@@ -339,57 +331,69 @@ export default function App() {
               onReset={handleReset}
               onChangeSpeed={setSpeed}
               onExportTrace={handleExportTrace}
+              onOpenQuiz={() => setIsQuizOpen(true)}
               status={execStatus}
               currentLine={currentLine}
               stepExplanation={currentStep?.explanation}
+              programs={programs}
+              selectedProgramId={selectedProgramId}
+              onSelectProgram={handleSelectProgram}
             />
           </div>
 
-          {/* Visualization Workspace Area */}
-          <div className="flex-1 flex flex-col gap-3.5 min-h-[360px]">
+          {/* Visualization Workspace Area: Memory Stack & Console Output Only */}
+          <div className="flex-1 flex flex-col gap-3.5 min-h-[480px]">
             {/* Section Header */}
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
                 <h2 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Execution Visualization
+                  Memory Stack & Console Runtime
                 </h2>
                 <span className="text-[11px] text-slate-400 font-normal">
-                  • Live program state
+                  • {currentProgram.title} ({language.toUpperCase()})
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  Running
+                  {execStatus === 'running' || isPlaying ? 'Executing' : execStatus === 'completed' ? 'Execution Complete' : 'Paused'}
                 </span>
               </div>
             </div>
 
-            {/* Three Visualization Panels Grid */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-3.5 min-h-[280px]">
-              {/* Panel 1: Code Execution */}
-              <div className={`h-full ${activeViewTab === 'all' || activeViewTab === 'code' ? 'block' : 'hidden lg:block'}`}>
-                <CodePanel
-                  code={code}
-                  currentLine={currentLine}
-                  language={language}
-                  event={currentStep?.event}
-                />
-              </div>
-
-              {/* Panel 2: Memory State (Stack & Heap) */}
-              <div className={`h-full ${activeViewTab === 'all' || activeViewTab === 'memory' ? 'block' : 'hidden lg:block'}`}>
+            {/* Memory Stack and Console Output Panels Grid */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[420px]">
+              {/* Panel 1: Memory State (Stack Frames, Heap Objects & Persistent Variable Watchlist) */}
+              <div
+                className={`h-full min-h-[400px] ${
+                  activeViewTab === 'all'
+                    ? 'lg:col-span-7 xl:col-span-8 block'
+                    : activeViewTab === 'memory'
+                    ? 'lg:col-span-12 block'
+                    : 'hidden'
+                }`}
+              >
                 <MemoryStatePanel
                   stackFrames={currentStep?.callStack || []}
                   heapObjects={currentStep?.heap || []}
                   highlightVariables={currentStep?.highlightVariables}
                   status={execStatus === 'running' || isPlaying ? 'Running' : execStatus === 'completed' ? 'Completed' : 'Paused'}
+                  pinnedVarNames={pinnedVarNames}
+                  onTogglePinVariable={handleTogglePinVariable}
                 />
               </div>
 
-              {/* Panel 3: Console Output */}
-              <div className={`h-full ${activeViewTab === 'all' || activeViewTab === 'console' ? 'block' : 'hidden lg:block'}`}>
+              {/* Panel 2: Console Output (Terminal, Standard Output, Logs & Stream) */}
+              <div
+                className={`h-full min-h-[400px] ${
+                  activeViewTab === 'all'
+                    ? 'lg:col-span-5 xl:col-span-4 block'
+                    : activeViewTab === 'console'
+                    ? 'lg:col-span-12 block'
+                    : 'hidden'
+                }`}
+              >
                 <ConsolePanel
                   stdout={currentStep?.stdout || []}
                   isCompleted={currentStepIndex === executionSteps.length - 1}
@@ -438,6 +442,18 @@ export default function App() {
         onClose={() => setIsAIExplainerOpen(false)}
         currentStep={currentStep}
         program={currentProgram}
+        onOpenQuiz={() => setIsQuizOpen(true)}
+      />
+
+      {/* AI 3-Question Code & Logic Quiz Modal */}
+      <AIQuizModal
+        isOpen={isQuizOpen}
+        onClose={() => setIsQuizOpen(false)}
+        code={code}
+        language={language}
+        program={currentProgram}
+        currentStep={currentStep}
+        totalSteps={executionSteps.length}
       />
 
       {/* Global Search Command Palette */}

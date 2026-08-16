@@ -16,10 +16,12 @@ import {
   Lightbulb,
   Wrench,
   X,
-  ArrowRight
+  ArrowRight,
+  GitCompare
 } from 'lucide-react';
 import { Language, ExecutionProgram } from '../types';
 import { validateSyntax, SyntaxErrorDetail } from '../utils/syntaxValidator';
+import { CompareVersionsModal } from './modals/CompareVersionsModal';
 
 interface CodeEditorProps {
   code: string;
@@ -55,10 +57,24 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [pinnedErrorLine, setPinnedErrorLine] = useState<number | null>(null);
   const [activeFixLine, setActiveFixLine] = useState<number | null>(null);
   const [syntaxWarningBanner, setSyntaxWarningBanner] = useState<string | null>(null);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorBodyRef = useRef<HTMLDivElement>(null);
+
+  const originalProgram = useMemo(
+    () => programs.find((p) => p.id === selectedProgramId) || null,
+    [programs, selectedProgramId]
+  );
+  const originalCode = originalProgram?.code || '';
+  const isModified = code.trim() !== originalCode.trim();
+
+  const handleRevertToOriginal = () => {
+    if (originalCode) {
+      onChangeCode(originalCode);
+    }
+  };
 
   const lines = useMemo(() => code.split('\n'), [code]);
 
@@ -312,6 +328,31 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Compare Versions Button */}
+          <button
+            id="editor-compare-versions-btn"
+            onClick={() => setIsCompareModalOpen(true)}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all duration-150 cursor-pointer border ${
+              isModified
+                ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-500/10'
+                : 'bg-[#0D1117] hover:bg-slate-800 text-slate-300 border-slate-800 hover:border-slate-700'
+            }`}
+            title={
+              isModified
+                ? 'Your code has been edited. Click to view diff vs original program baseline.'
+                : 'Compare current code with original program baseline.'
+            }
+          >
+            <GitCompare className={`w-3.5 h-3.5 ${isModified ? 'text-amber-400' : 'text-blue-400'}`} />
+            <span className="hidden sm:inline">Compare Versions</span>
+            {isModified && (
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+            )}
+          </button>
+
           <button
             id="editor-copy-btn"
             onClick={handleCopyCode}
@@ -627,6 +668,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <span className="text-slate-400">{language.toUpperCase()}</span>
         </div>
       </div>
+
+      {/* Code Version Comparison Diff Modal */}
+      <CompareVersionsModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        currentCode={code}
+        originalCode={originalCode}
+        program={originalProgram}
+        language={language}
+        onRevertToOriginal={handleRevertToOriginal}
+      />
     </div>
   );
 };

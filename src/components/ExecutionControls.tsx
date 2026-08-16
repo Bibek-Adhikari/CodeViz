@@ -12,8 +12,12 @@ import {
   SlidersHorizontal,
   Download,
   Check,
-  FileJson
+  FileJson,
+  BrainCircuit,
+  Code2,
+  ChevronDown
 } from 'lucide-react';
+import { ExecutionProgram } from '../types';
 
 interface ExecutionControlsProps {
   currentStepIndex: number;
@@ -26,9 +30,13 @@ interface ExecutionControlsProps {
   onReset: () => void;
   onChangeSpeed: (speed: number) => void;
   onExportTrace?: () => void;
+  onOpenQuiz?: () => void;
   status: 'idle' | 'running' | 'paused' | 'completed';
   currentLine?: number | null;
   stepExplanation?: string;
+  programs?: ExecutionProgram[];
+  selectedProgramId?: string;
+  onSelectProgram?: (programId: string) => void;
 }
 
 export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
@@ -42,9 +50,13 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
   onReset,
   onChangeSpeed,
   onExportTrace,
+  onOpenQuiz,
   status,
   currentLine,
   stepExplanation,
+  programs,
+  selectedProgramId,
+  onSelectProgram,
 }) => {
   const [isExported, setIsExported] = useState(false);
   const currentStepNum = totalSteps > 0 ? currentStepIndex + 1 : 0;
@@ -60,10 +72,32 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
 
   return (
     <div className="rounded-xl border border-slate-800/60 bg-[#121820] shadow-lg p-3 select-none flex flex-col gap-2.5">
-      {/* Top row: Status, Step counter, Progress Bar, Control Buttons */}
+      {/* Top row: Status, Program Selector, Step Navigation, Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Left side: Step Navigation Controls */}
-        <div className="flex items-center gap-1.5">
+        {/* Left side: Program Picker & Step Navigation Controls */}
+        <div className="flex items-center flex-wrap gap-2">
+          {/* Program preset selector if provided */}
+          {programs && onSelectProgram && selectedProgramId && (
+            <div className="relative flex items-center mr-1">
+              <div className="absolute left-2.5 pointer-events-none text-blue-400">
+                <Code2 className="w-3.5 h-3.5" />
+              </div>
+              <select
+                id="controls-program-select"
+                value={selectedProgramId}
+                onChange={(e) => onSelectProgram(e.target.value)}
+                className="text-xs bg-[#0D1117] text-slate-200 border border-slate-800 rounded-lg pl-8 pr-7 py-1.5 font-medium appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer hover:border-slate-700 transition-colors shadow-sm"
+              >
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title} ({p.language.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 pointer-events-none" />
+            </div>
+          )}
+
           {/* Reset Button */}
           <button
             id="exec-ctrl-reset"
@@ -160,8 +194,22 @@ export const ExecutionControls: React.FC<ExecutionControlsProps> = ({
           </div>
         </div>
 
-        {/* Right side: Export Execution Trace + Speed Selector */}
+        {/* Right side: Quiz Me + Export Execution Trace + Speed Selector */}
         <div className="flex items-center gap-2">
+          {/* Quiz Me Button */}
+          {onOpenQuiz && (
+            <button
+              id="exec-ctrl-quiz-me"
+              onClick={onOpenQuiz}
+              className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 hover:from-amber-500/25 hover:to-orange-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm shadow-amber-500/10"
+              title="Test your understanding with a 3-question AI Quiz on this execution flow"
+            >
+              <BrainCircuit className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline text-[11px]">Quiz Me</span>
+              <span className="sm:hidden text-[11px]">Quiz</span>
+            </button>
+          )}
+
           {/* Export Execution Trace Button */}
           <button
             id="exec-ctrl-export-trace"

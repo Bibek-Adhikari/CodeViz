@@ -77,3 +77,23 @@ export interface StudyMaterial {
   summary: string;
   samplePages?: StudyPage[];
 }
+
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  codeSnippet?: string;
+  options: string[];
+  correctAnswerIndex: number;
+  explanation: string;
+  topicCategory: 'Logic Flow' | 'Memory & Stack' | 'Algorithm Complexity' | 'Scope & Variables';
+  hint?: string;
+}
+
+export interface PinnedVariable {
+  name: string;
+  type: VariableType;
+  lastKnownValue: string | number | boolean | Array<unknown>;
+  lastScopeName: string;
+  isCurrentlyInScope: boolean;
+  isModified?: boolean;
+}

@@ -9,7 +9,8 @@ import {
   HelpCircle, 
   Lightbulb, 
   CheckCircle2,
-  Code2
+  Code2,
+  BrainCircuit
 } from 'lucide-react';
 import { ExecutionStep, ExecutionProgram } from '../../types';
 
@@ -18,6 +19,7 @@ interface AIExplainerModalProps {
   onClose: () => void;
   currentStep: ExecutionStep | null;
   program: ExecutionProgram | null;
+  onOpenQuiz?: () => void;
 }
 
 export const AIExplainerModal: React.FC<AIExplainerModalProps> = ({
@@ -25,6 +27,7 @@ export const AIExplainerModal: React.FC<AIExplainerModalProps> = ({
   onClose,
   currentStep,
   program,
+  onOpenQuiz,
 }) => {
   if (!isOpen) return null;
 
@@ -137,7 +140,23 @@ export const AIExplainerModal: React.FC<AIExplainerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 bg-[#161E27] border-t border-slate-800/80 flex justify-end">
+        <div className="p-3.5 bg-[#161E27] border-t border-slate-800/80 flex items-center justify-between">
+          <div>
+            {onOpenQuiz && (
+              <button
+                id="ai-tutor-quiz-me-btn"
+                onClick={() => {
+                  onClose();
+                  onOpenQuiz();
+                }}
+                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500/15 to-orange-500/15 hover:from-amber-500/25 hover:to-orange-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+              >
+                <BrainCircuit className="w-3.5 h-3.5 text-amber-400" />
+                <span>Test with 3-Question Quiz</span>
+              </button>
+            )}
+          </div>
+
           <button
             onClick={onClose}
             className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors shadow-sm cursor-pointer"
