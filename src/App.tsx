@@ -26,9 +26,12 @@ import { AIExplainerModal } from './components/modals/AIExplainerModal';
 import { SearchModal } from './components/modals/SearchModal';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { AIQuizModal } from './components/modals/AIQuizModal';
-import { Sparkles, Layers, Cpu, Terminal, HelpCircle, Code2, AlertCircle } from 'lucide-react';
+import { useTheme } from './context/ThemeContext';
+import { LayoutGrid, Code2, Cpu, Terminal, PanelLeft } from 'lucide-react';
 
 export default function App() {
+  const { isDark } = useTheme();
+
   // Programs & Code state
   const [programs] = useState<ExecutionProgram[]>(SAMPLE_PROGRAMS);
   const [selectedProgramId, setSelectedProgramId] = useState<string>(SAMPLE_PROGRAMS[0].id);
@@ -37,7 +40,7 @@ export default function App() {
   const [code, setCode] = useState<string>(currentProgram.code);
   const [language, setLanguage] = useState<Language>(currentProgram.language);
   const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>(currentProgram.steps);
-  const [currentStepIndex, setCurrentStepIndex] = useState<number>(3); // Initialized to Step 4 (index 3) like in prompt: "Step 4 of 6"
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(3); // Initialized to Step 4 (index 3)
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1);
   const [execStatus, setExecStatus] = useState<'idle' | 'running' | 'paused' | 'completed'>('running');
@@ -48,7 +51,14 @@ export default function App() {
   // Study Materials state
   const [materials, setMaterials] = useState<StudyMaterial[]>(INITIAL_STUDY_MATERIALS);
   const [selectedMaterial, setSelectedMaterial] = useState<StudyMaterial | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Responsive Sidebar State: open on desktop by default, closed on mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
 
   // Modals state
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -81,7 +91,6 @@ export default function App() {
 
   // Re-run visualization
   const handleRunVisualize = () => {
-    // If code matches current program preset, use its pre-computed rich steps, else generate steps
     let steps: ExecutionStep[];
     if (code.trim() === currentProgram.code.trim()) {
       steps = currentProgram.steps;
@@ -105,8 +114,8 @@ export default function App() {
         setIsPlaying(false);
         try {
           confetti({
-            particleCount: 40,
-            spread: 60,
+            particleCount: 35,
+            spread: 50,
             origin: { y: 0.8 },
             colors: ['#3b82f6', '#06b6d4', '#10b981']
           });
@@ -141,8 +150,8 @@ export default function App() {
     const currentProgTitle = currentProgram?.title || 'Execution Trace';
 
     const traceData = {
-      app: 'Interactive Code Execution & Memory Visualizer',
-      version: '1.0.0',
+      app: 'CodeViz Study Hub',
+      version: '2.0.0',
       exportedAt: new Date().toISOString(),
       program: {
         id: selectedProgramId,
@@ -214,7 +223,6 @@ export default function App() {
   // Keyboard navigation shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when typing in textareas or inputs
       if (['TEXTAREA', 'INPUT'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
@@ -231,6 +239,9 @@ export default function App() {
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         handleReset();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setIsSidebarOpen(prev => !prev);
       } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchOpen(true);
@@ -293,9 +304,13 @@ export default function App() {
   const currentLine = currentStep ? currentStep.line : null;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0A0E14] text-slate-300 overflow-hidden font-sans select-none">
-      {/* Top Application Header */}
+    <div className={`h-screen w-screen flex flex-col overflow-hidden font-sans select-none transition-colors duration-200 ${
+      isDark ? 'bg-[#0A0E14] text-slate-300' : 'bg-slate-100 text-slate-800'
+    }`}>
+      {/* Top Application Header with Hamburger Sidebar Toggle */}
       <Header
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenAIExplainer={() => setIsAIExplainerOpen(true)}
         onOpenQuiz={() => setIsQuizOpen(true)}
@@ -304,142 +319,188 @@ export default function App() {
         setActiveViewTab={setActiveViewTab}
       />
 
-      {/* Main Developer Workspace: Sidebar + Center Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar: Study Materials */}
+      {/* Main Workspace Layout Container */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Sidebar Drawer */}
         <Sidebar
           materials={materials}
           selectedMaterial={selectedMaterial}
           onSelectMaterial={(mat) => setSelectedMaterial(mat)}
           onUploadFiles={handleUploadFiles}
           onDeleteMaterial={handleDeleteMaterial}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
 
-        {/* Primary Workspace Zone */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto p-4 sm:p-5 gap-4 bg-[#0A0E14]">
-          {/* Top Section: Code Editor (Pasting & Editing) & Execution Controls */}
-          <div className="grid grid-cols-1 gap-3 shrink-0">
-            {/* Code Editor Block for Pasting & Editing */}
-            <div className="min-h-[290px] h-[34vh] max-h-[420px]">
-              <CodeEditor
-                code={code}
-                onChangeCode={setCode}
-                language={language}
-                onChangeLanguage={setLanguage}
-                currentLine={currentLine}
-                onRunVisualize={handleRunVisualize}
-                onReset={handleReset}
-                programs={programs}
-                selectedProgramId={selectedProgramId}
-                onSelectProgram={handleSelectProgram}
-                isRunning={isPlaying}
-              />
-            </div>
+        {/* Docked Left Edge Toggle Button when Sidebar is Collapsed */}
+        {!isSidebarOpen && (
+          <button
+            id="workspace-open-sidebar-edge-btn"
+            onClick={() => setIsSidebarOpen(true)}
+            className="fixed left-0 top-[4.5rem] z-30 flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-r-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md border-y border-r border-blue-400/50 transition-all cursor-pointer group active:scale-95 animate-in fade-in slide-in-from-left-2 duration-200"
+            title="Open Study Library & Materials (⌘B)"
+          >
+            <PanelLeft className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-bold">Study Library</span>
+          </button>
+        )}
 
-            {/* Execution Controls Bar */}
-            <ExecutionControls
-              currentStepIndex={currentStepIndex}
-              totalSteps={executionSteps.length}
-              isPlaying={isPlaying}
-              speed={speed}
-              onStepBack={handleStepBack}
-              onStepForward={handleStepForward}
-              onTogglePlay={handleTogglePlay}
-              onReset={handleReset}
-              onChangeSpeed={setSpeed}
-              onExportTrace={handleExportTrace}
-              onOpenQuiz={() => setIsQuizOpen(true)}
-              status={execStatus}
-              currentLine={currentLine}
-              stepExplanation={currentStep?.explanation}
-              programs={programs}
-              selectedProgramId={selectedProgramId}
-              onSelectProgram={handleSelectProgram}
-            />
+        {/* Primary Workspace: Expands to 100% width when sidebar is collapsed */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto p-3 sm:p-4 gap-3 sm:gap-3.5">
+          {/* Mobile Tab Bar (< md screens) */}
+          <div className="flex md:hidden items-center justify-between bg-white dark:bg-[#121820] p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs shrink-0">
+            <button
+              onClick={() => setActiveViewTab('all')}
+              className={`flex-1 py-1 px-2 text-[11px] font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+                activeViewTab === 'all'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <LayoutGrid className="w-3 h-3" />
+              <span>Split</span>
+            </button>
+            <button
+              onClick={() => setActiveViewTab('code')}
+              className={`flex-1 py-1 px-2 text-[11px] font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+                activeViewTab === 'code'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Code2 className="w-3 h-3" />
+              <span>Code</span>
+            </button>
+            <button
+              onClick={() => setActiveViewTab('memory')}
+              className={`flex-1 py-1 px-2 text-[11px] font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+                activeViewTab === 'memory'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Cpu className="w-3 h-3" />
+              <span>Memory</span>
+            </button>
+            <button
+              onClick={() => setActiveViewTab('console')}
+              className={`flex-1 py-1 px-2 text-[11px] font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+                activeViewTab === 'console'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Terminal className="w-3 h-3" />
+              <span>Console</span>
+            </button>
           </div>
 
-          {/* Visualization Workspace Area: Memory Stack & Console Output Only (Removed redundant bottom code block) */}
-          <div className="flex-1 flex flex-col gap-3.5 min-h-[380px]">
-            {/* Section Header */}
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                <h2 className="text-xs font-bold uppercase tracking-wider text-white">
-                  Memory Stack & Console Output
-                </h2>
-                <span className="text-[11px] text-slate-400 font-normal">
-                  • Live runtime memory & stdout
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  {execStatus === 'running' || isPlaying ? 'Executing' : execStatus === 'completed' ? 'Execution Complete' : 'Paused'}
-                </span>
-              </div>
-            </div>
-
-            {/* Memory Stack and Console Output Panels Grid (2 panels only) */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[320px]">
-              {/* Panel 1: Memory State (Stack Frames, Heap Objects & Variable Watchlist) */}
-              <div
-                className={`h-full min-h-[300px] ${
-                  activeViewTab === 'all'
-                    ? 'lg:col-span-7 xl:col-span-8 block'
-                    : activeViewTab === 'memory'
-                    ? 'lg:col-span-12 block'
-                    : 'hidden lg:block'
-                }`}
-              >
-                <MemoryStatePanel
-                  stackFrames={currentStep?.callStack || []}
-                  heapObjects={currentStep?.heap || []}
-                  highlightVariables={currentStep?.highlightVariables}
-                  status={execStatus === 'running' || isPlaying ? 'Running' : execStatus === 'completed' ? 'Completed' : 'Paused'}
-                  pinnedVarNames={pinnedVarNames}
-                  onTogglePinVariable={handleTogglePinVariable}
+          {/* Section 1: Code Editor & Execution Controls */}
+          {(activeViewTab === 'all' || activeViewTab === 'code') && (
+            <div className="flex flex-col gap-2.5 shrink-0">
+              {/* Code Editor Container */}
+              <div className="min-h-[17rem] h-[32vh] max-h-[26rem]">
+                <CodeEditor
+                  code={code}
+                  onChangeCode={setCode}
+                  language={language}
+                  onChangeLanguage={setLanguage}
+                  currentLine={currentLine}
+                  onRunVisualize={handleRunVisualize}
+                  onReset={handleReset}
+                  programs={programs}
+                  selectedProgramId={selectedProgramId}
+                  onSelectProgram={handleSelectProgram}
+                  isRunning={isPlaying}
                 />
               </div>
 
-              {/* Panel 2: Console Output (Standard Output / Terminal) */}
-              <div
-                className={`h-full min-h-[300px] ${
-                  activeViewTab === 'all'
-                    ? 'lg:col-span-5 xl:col-span-4 block'
-                    : activeViewTab === 'console'
-                    ? 'lg:col-span-12 block'
-                    : 'hidden lg:block'
-                }`}
-              >
-                <ConsolePanel
-                  stdout={currentStep?.stdout || []}
-                  isCompleted={currentStepIndex === executionSteps.length - 1}
-                  onClear={() => {
-                    const updated = [...executionSteps];
-                    if (updated[currentStepIndex]) {
-                      updated[currentStepIndex].stdout = [];
-                      setExecutionSteps(updated);
-                    }
+              {/* Compact Execution Controls Bar */}
+              <ExecutionControls
+                currentStepIndex={currentStepIndex}
+                totalSteps={executionSteps.length}
+                isPlaying={isPlaying}
+                speed={speed}
+                onStepBack={handleStepBack}
+                onStepForward={handleStepForward}
+                onTogglePlay={handleTogglePlay}
+                onReset={handleReset}
+                onChangeSpeed={setSpeed}
+                onExportTrace={handleExportTrace}
+                onOpenQuiz={() => setIsQuizOpen(true)}
+                status={execStatus}
+                currentLine={currentLine}
+                stepExplanation={currentStep?.explanation}
+                programs={programs}
+                selectedProgramId={selectedProgramId}
+                onSelectProgram={handleSelectProgram}
+              />
+            </div>
+          )}
+
+          {/* Section 2: Visualization Panels (Memory Stack & Heap + Console Output) */}
+          {(activeViewTab === 'all' || activeViewTab === 'memory' || activeViewTab === 'console') && (
+            <div className="flex-1 flex flex-col gap-2.5 min-h-[22rem]">
+              {/* Memory Stack & Console Output Panels Grid */}
+              <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[19rem]">
+                {/* Panel 1: Memory State */}
+                {(activeViewTab === 'all' || activeViewTab === 'memory') && (
+                  <div
+                    className={`h-full min-h-[18rem] ${
+                      activeViewTab === 'all'
+                        ? 'lg:col-span-7 xl:col-span-8'
+                        : 'lg:col-span-12'
+                    }`}
+                  >
+                    <MemoryStatePanel
+                      stackFrames={currentStep?.callStack || []}
+                      heapObjects={currentStep?.heap || []}
+                      highlightVariables={currentStep?.highlightVariables}
+                      status={execStatus === 'running' || isPlaying ? 'Running' : execStatus === 'completed' ? 'Completed' : 'Paused'}
+                      pinnedVarNames={pinnedVarNames}
+                      onTogglePinVariable={handleTogglePinVariable}
+                    />
+                  </div>
+                )}
+
+                {/* Panel 2: Console Output */}
+                {(activeViewTab === 'all' || activeViewTab === 'console') && (
+                  <div
+                    className={`h-full min-h-[18rem] ${
+                      activeViewTab === 'all'
+                        ? 'lg:col-span-5 xl:col-span-4'
+                        : 'lg:col-span-12'
+                    }`}
+                  >
+                    <ConsolePanel
+                      stdout={currentStep?.stdout || []}
+                      isCompleted={currentStepIndex === executionSteps.length - 1}
+                      onClear={() => {
+                        const updated = [...executionSteps];
+                        if (updated[currentStepIndex]) {
+                          updated[currentStepIndex].stdout = [];
+                          setExecutionSteps(updated);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Horizontal Execution Timeline */}
+              <div className="shrink-0 pt-0.5">
+                <ExecutionTimeline
+                  steps={executionSteps}
+                  currentStepIndex={currentStepIndex}
+                  onSelectStep={(idx) => {
+                    setCurrentStepIndex(idx);
+                    setIsPlaying(false);
+                    setExecStatus(idx === executionSteps.length - 1 ? 'completed' : 'paused');
                   }}
                 />
               </div>
             </div>
-
-            {/* Horizontal Execution Timeline */}
-            <div className="shrink-0 pt-1">
-              <ExecutionTimeline
-                steps={executionSteps}
-                currentStepIndex={currentStepIndex}
-                onSelectStep={(idx) => {
-                  setCurrentStepIndex(idx);
-                  setIsPlaying(false);
-                  setExecStatus(idx === executionSteps.length - 1 ? 'completed' : 'paused');
-                }}
-              />
-            </div>
-          </div>
+          )}
         </main>
       </div>
 

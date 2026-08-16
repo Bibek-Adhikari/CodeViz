@@ -3,19 +3,15 @@ import {
   FileText, 
   Image as ImageIcon, 
   UploadCloud, 
-  ChevronLeft, 
-  ChevronRight, 
   Plus, 
   Trash2, 
-  ExternalLink, 
   FolderOpen, 
-  HardDrive,
-  FileCode2,
-  Sparkles,
   BookMarked,
-  Filter
+  PanelLeftClose
 } from 'lucide-react';
 import { StudyMaterial } from '../types';
+import { useTheme } from '../context/ThemeContext';
+import { Tooltip } from './common/Tooltip';
 
 interface SidebarProps {
   materials: StudyMaterial[];
@@ -23,8 +19,8 @@ interface SidebarProps {
   onSelectMaterial: (material: StudyMaterial) => void;
   onUploadFiles: (files: FileList | null) => void;
   onDeleteMaterial: (id: string) => void;
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,12 +29,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectMaterial,
   onUploadFiles,
   onDeleteMaterial,
-  isCollapsed,
-  onToggleCollapse,
+  isOpen,
+  onClose,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isDark } = useTheme();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -62,232 +59,249 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ? materials 
     : materials.filter(m => m.category === categoryFilter);
 
-  if (isCollapsed) {
-    return (
-      <aside className="w-14 border-r border-slate-800/60 bg-[#0F141B] flex flex-col items-center py-4 z-20 shrink-0 transition-all duration-300">
-        <button
-          id="sidebar-expand-btn"
-          onClick={onToggleCollapse}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors mb-4"
-          title="Expand Study Materials Sidebar"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-
-        <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6" title="Study Library">
-          <BookMarked className="w-4 h-4" />
-        </div>
-
-        <div className="flex-1 flex flex-col items-center gap-2 overflow-y-auto w-full px-2">
-          {materials.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onSelectMaterial(item)}
-              title={`${item.title} (${item.size})`}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                selectedMaterial?.id === item.id
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-md'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
-            >
-              {item.type === 'pdf' ? (
-                <FileText className="w-4 h-4 text-red-400" />
-              ) : (
-                <ImageIcon className="w-4 h-4 text-blue-400" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        <button
-          id="sidebar-collapsed-upload-btn"
-          onClick={() => fileInputRef.current?.click()}
-          className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors mt-auto"
-          title="Upload Material"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf,.png,.jpg,.jpeg,.svg,.gif,.txt,.md"
-          className="hidden"
-          onChange={(e) => onUploadFiles(e.target.files)}
-        />
-      </aside>
-    );
-  }
+  const handleItemClick = (item: StudyMaterial) => {
+    onSelectMaterial(item);
+    // On mobile/tablet screens (< 1024px), automatically close sidebar drawer
+    if (window.innerWidth < 1024) {
+      onClose();
+    }
+  };
 
   return (
-    <aside className="w-72 xl:w-76 border-r border-slate-800/60 bg-[#0F141B] flex flex-col h-full z-20 shrink-0 select-none transition-all duration-300">
-      {/* Top Header of Sidebar */}
-      <div className="p-5 border-b border-slate-800/60 flex items-center justify-between">
-        <div>
-          <h2 className="text-[11px] uppercase tracking-widest font-semibold text-slate-500">Study Materials</h2>
-          <p className="text-[10px] text-slate-400 mt-0.5">Lecture slides, diagrams & notes</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            id="sidebar-upload-quick-btn"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
-            title="Upload new file"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          <button
-            id="sidebar-collapse-btn"
-            onClick={onToggleCollapse}
-            className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
-            title="Collapse Sidebar"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {/* Large Drag and Drop Upload Area */}
+    <>
+      {/* Mobile / Tablet Backdrop Overlay */}
+      {isOpen && (
         <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 group ${
-            isDragging
-              ? 'border-blue-500 bg-blue-500/15 shadow-[0_0_20px_rgba(59,130,246,0.3)]'
-              : 'border-blue-500/20 bg-blue-500/5 hover:border-blue-500/40'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.png,.jpg,.jpeg,.svg,.gif,.txt,.md"
-            className="hidden"
-            onChange={(e) => onUploadFiles(e.target.files)}
-          />
-          <div className="flex flex-col items-center">
-            <UploadCloud className="w-8 h-8 mx-auto text-blue-500/60 mb-2 group-hover:text-blue-400 transition-colors" />
-            <p className="text-xs font-medium text-slate-200 group-hover:text-blue-300 transition-colors">
-              Drop files here
-            </p>
-            <p className="text-[10px] text-slate-500 mt-1">PDF, JPG, or PNG</p>
-          </div>
-        </div>
+          id="sidebar-backdrop"
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
+          aria-hidden="true"
+        />
+      )}
 
-        {/* Category Filters */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px]">
-          {['All', 'Lectures', 'Diagrams', 'Cheatsheets'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-2.5 py-1 rounded-md text-[11px] whitespace-nowrap transition-colors ${
-                categoryFilter === cat
-                  ? 'bg-blue-600/30 text-blue-400 border border-blue-500/40 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+      {/* Main Sidebar Drawer */}
+      <aside
+        id="app-study-sidebar"
+        aria-hidden={!isOpen}
+        className={`fixed lg:static top-0 bottom-0 left-0 z-40 flex flex-col select-none transition-all duration-300 ease-in-out ${
+          isOpen
+            ? `w-[18rem] sm:w-[19rem] max-w-[19rem] lg:basis-[19rem] opacity-100 translate-x-0 shadow-2xl lg:shadow-none pointer-events-auto border-r ${
+                isDark
+                  ? 'bg-[#0F141B] border-slate-800/60 text-slate-300'
+                  : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`
+            : 'w-0 max-w-0 min-w-0 lg:basis-0 p-0 m-0 border-r-0 border-transparent -translate-x-full lg:translate-x-0 overflow-hidden opacity-0 pointer-events-none'
+        }`}
+      >
+        <div className="w-[18rem] sm:w-[19rem] min-w-[18rem] sm:min-w-[19rem] h-full flex flex-col overflow-hidden">
+          {/* Top Header of Sidebar */}
+          <div className={`h-[3.25rem] px-4 border-b flex items-center justify-between shrink-0 ${
+            isDark ? 'border-slate-800/60 bg-[#121820]' : 'border-slate-200 bg-white'
+          }`}>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <BookMarked className="w-4 h-4" />
+              </div>
+              <div className="truncate">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white truncate">
+                  Study Materials
+                </h2>
+                <p className="text-[10px] text-slate-500 truncate">
+                  {materials.length} {materials.length === 1 ? 'resource' : 'resources'} available
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Tooltip content="Upload material" position="bottom">
+                <button
+                  id="sidebar-upload-quick-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-1.5 hover:bg-slate-200/80 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-transparent hover:border-slate-300 dark:hover:border-slate-700"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </Tooltip>
+
+              <Tooltip content="Close Sidebar (⌘B)" position="bottom">
+                <button
+                  id="sidebar-close-btn"
+                  onClick={onClose}
+                  className="flex items-center gap-1 px-2 py-1 bg-slate-200/90 dark:bg-slate-800 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-all cursor-pointer shadow-xs active:scale-95"
+                  aria-label="Close sidebar"
+                >
+                  <PanelLeftClose className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Close</span>
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Sidebar Scrollable Body */}
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+            {/* Drag & Drop Upload Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border border-dashed rounded-xl p-3.5 text-center cursor-pointer transition-all duration-200 group ${
+                isDragging
+                  ? 'border-blue-500 bg-blue-500/10 scale-[0.99]'
+                  : isDark
+                  ? 'border-slate-800 hover:border-blue-500/50 bg-[#161E27]/50 hover:bg-[#161E27]'
+                  : 'border-slate-300 hover:border-blue-500/60 bg-white hover:bg-blue-50/30'
               }`}
             >
-              {cat}
-            </button>
-          ))}
-        </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.png,.jpg,.jpeg,.svg,.gif,.txt,.md"
+                className="hidden"
+                onChange={(e) => onUploadFiles(e.target.files)}
+              />
+              <div className="flex flex-col items-center">
+                <UploadCloud className="w-6 h-6 text-blue-600 dark:text-blue-400 mb-1 group-hover:scale-110 transition-transform" />
+                <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
+                  Upload / Drop Lecture Notes
+                </p>
+                <p className="text-[9.5px] text-slate-500 mt-0.5">PDF, PNG, JPG, MD</p>
+              </div>
+            </div>
 
-        {/* Uploaded Material Cards */}
-        {filteredMaterials.length === 0 ? (
-          <div className="p-4 rounded-xl bg-[#161E27] border border-slate-800 text-center">
-            <FolderOpen className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <h4 className="text-xs font-semibold text-slate-300">Library is empty</h4>
-            <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-              Upload study files to inspect them side-by-side with execution.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {filteredMaterials.map((item) => {
-              const isSelected = selectedMaterial?.id === item.id;
-              const isPdf = item.type === 'pdf';
-
-              return (
-                <div
-                  key={item.id}
-                  id={`study-file-${item.id}`}
-                  onClick={() => onSelectMaterial(item)}
-                  className={`p-3 rounded-lg flex items-center gap-3 transition-all cursor-pointer relative ${
-                    isSelected
-                      ? 'bg-[#161E27] border border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
-                      : 'bg-[#161E27] border border-slate-800 hover:border-blue-500/50 ring-1 ring-transparent hover:ring-blue-500/10'
+            {/* Category Filter Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px] scrollbar-none">
+              {['All', 'Lectures', 'Diagrams', 'Cheatsheets'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-2 py-0.5 rounded-md text-[10.5px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    categoryFilter === cat
+                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                      : isDark
+                      ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
-                  {/* Thumbnail or Icon */}
-                  {isPdf ? (
-                    <div className="w-8 h-8 bg-red-500/10 text-red-500 rounded flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                  ) : item.url ? (
-                    <div className="w-8 h-8 rounded overflow-hidden border border-slate-700 bg-slate-800 shrink-0 flex items-center justify-center">
-                      <img
-                        src={item.url}
-                        alt={item.title}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 bg-blue-500/10 text-blue-500 rounded flex items-center justify-center shrink-0">
-                      <ImageIcon className="w-4 h-4" />
-                    </div>
-                  )}
+                  {cat}
+                </button>
+              ))}
+            </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-xs font-medium truncate ${
-                        isSelected ? 'text-white font-semibold' : 'text-white'
+            {/* Uploaded Materials List */}
+            {filteredMaterials.length === 0 ? (
+              <div className={`p-4 rounded-xl text-center border ${
+                isDark ? 'bg-[#161E27]/60 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+              }`}>
+                <FolderOpen className="w-6 h-6 text-slate-400 mx-auto mb-1.5" />
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">No materials</h4>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Upload files to inspect beside code.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {filteredMaterials.map((item) => {
+                  const isSelected = selectedMaterial?.id === item.id;
+                  const isPdf = item.type === 'pdf';
+
+                  return (
+                    <div
+                      key={item.id}
+                      id={`study-file-${item.id}`}
+                      onClick={() => handleItemClick(item)}
+                      className={`p-2.5 rounded-lg flex items-center gap-2.5 transition-all cursor-pointer group relative border ${
+                        isSelected
+                          ? isDark
+                            ? 'bg-blue-950/40 border-blue-500/60 text-white shadow-xs'
+                            : 'bg-blue-50 border-blue-400 text-blue-950 shadow-xs'
+                          : isDark
+                          ? 'bg-[#161E27]/70 border-slate-800/80 hover:border-slate-700 hover:bg-[#161E27]'
+                          : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-100/60'
                       }`}
-                      title={item.title}
                     >
-                      {item.title}
-                    </p>
-                    <p className={`text-[10px] ${isSelected ? 'text-blue-400' : 'text-slate-500'}`}>
-                      {isPdf ? item.size : 'Image Asset'}
-                    </p>
-                  </div>
+                      {/* Thumbnail or Icon */}
+                      {isPdf ? (
+                        <div className="w-7 h-7 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                      ) : item.url ? (
+                        <div className="w-7 h-7 rounded-md overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 shrink-0 flex items-center justify-center">
+                          <img
+                            src={item.url}
+                            alt={item.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                        </div>
+                      )}
 
-                  {/* Active Blue Dot */}
-                  {isSelected && (
-                    <div className="absolute right-2.5 top-2.5 w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_6px_rgba(59,130,246,0.8)]" />
-                  )}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-xs font-medium truncate leading-tight"
+                          title={item.title}
+                        >
+                          {item.title}
+                        </p>
+                        <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                          {isPdf ? item.size : 'Image Diagram'}
+                        </p>
+                      </div>
 
-                  {/* Delete quick action */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteMaterial(item.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 rounded transition-opacity"
-                    title="Remove file"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              );
-            })}
+                      {/* Delete quick button */}
+                      <Tooltip content="Delete file" position="left">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteMaterial(item.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-opacity cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </Tooltip>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Storage Indicator at Bottom */}
-      <div className="p-5 border-t border-slate-800/60 bg-[#0C1219] shrink-0">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">Study Library</span>
-          <span className="text-[10px] text-slate-400 font-mono">248 MB / 1GB</span>
+          {/* Storage Bar & Collapse Footer */}
+          <div className={`p-3 border-t text-xs shrink-0 flex flex-col gap-2.5 ${
+            isDark ? 'border-slate-800/60 bg-[#0C1219]' : 'border-slate-200 bg-slate-100/70'
+          }`}>
+            <div>
+              <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                <span className="font-semibold uppercase tracking-wider">Library Space</span>
+                <span className="font-mono">248 MB / 1 GB</span>
+              </div>
+              <div className="h-1 w-full bg-slate-300 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-600 dark:bg-blue-500 w-[24.8%]" />
+              </div>
+            </div>
+
+            <button
+              id="sidebar-footer-collapse-btn"
+              onClick={onClose}
+              className={`w-full py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 text-[11.5px] font-medium transition-all border cursor-pointer ${
+                isDark
+                  ? 'bg-[#161E27] hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border-slate-200 hover:border-slate-300 shadow-xs'
+              }`}
+            >
+              <PanelLeftClose className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Close Sidebar View</span>
+            </button>
+          </div>
         </div>
-        <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-500 w-[24.8%]" />
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

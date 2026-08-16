@@ -23,6 +23,7 @@ import { Language, ExecutionProgram } from '../types';
 import { validateSyntax, SyntaxErrorDetail } from '../utils/syntaxValidator';
 import { CompareVersionsModal } from './modals/CompareVersionsModal';
 import { useTheme } from '../context/ThemeContext';
+import { Tooltip } from './common/Tooltip';
 
 interface CodeEditorProps {
   code: string;
@@ -388,77 +389,81 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {/* Compare Versions Button */}
-          <button
-            id="editor-compare-versions-btn"
-            onClick={() => setIsCompareModalOpen(true)}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all duration-150 cursor-pointer border shadow-xs ${
-              isModified
-                ? 'bg-amber-50 dark:bg-amber-500/15 hover:bg-amber-100 dark:hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500/40'
-                : 'bg-white dark:bg-[#0D1117] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-800'
-            }`}
-            title={
-              isModified
-                ? 'Your code has been edited. Click to view diff vs original program baseline.'
-                : 'Compare current code with original program baseline.'
-            }
-          >
-            <GitCompare className={`w-3.5 h-3.5 ${isModified ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`} />
-            <span className="hidden sm:inline">Compare Versions</span>
-            {isModified && (
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-            )}
-          </button>
+          <Tooltip content={isModified ? 'Diff vs baseline (Modified)' : 'Compare with original baseline'} position="bottom">
+            <button
+              id="editor-compare-versions-btn"
+              onClick={() => setIsCompareModalOpen(true)}
+              className={`px-2 py-1 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all duration-150 cursor-pointer border shadow-xs ${
+                isModified
+                  ? 'bg-amber-50 dark:bg-amber-500/15 hover:bg-amber-100 dark:hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500/40'
+                  : 'bg-white dark:bg-[#0D1117] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-800'
+              }`}
+            >
+              <GitCompare className={`w-3.5 h-3.5 ${isModified ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`} />
+              <span className="hidden md:inline text-[11.5px]">Compare</span>
+              {isModified && (
+                <span className="flex h-1.5 w-1.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                </span>
+              )}
+            </button>
+          </Tooltip>
 
-          <button
-            id="editor-copy-btn"
-            onClick={handleCopyCode}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1 cursor-pointer"
-            title="Copy Code"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
+          {/* Copy Code */}
+          <Tooltip content="Copy Code" position="bottom">
+            <button
+              id="editor-copy-btn"
+              onClick={handleCopyCode}
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          </Tooltip>
 
-          <button
-            id="editor-reset-btn"
-            onClick={onReset}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-            title="Reset to initial state"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+          {/* Reset Code */}
+          <Tooltip content="Reset Code" position="bottom">
+            <button
+              id="editor-reset-btn"
+              onClick={onReset}
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
 
-          <button
-            id="editor-fullscreen-btn"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors hidden sm:block cursor-pointer"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          </button>
+          {/* Fullscreen */}
+          <Tooltip content={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Editor'} position="bottom">
+            <button
+              id="editor-fullscreen-btn"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors hidden sm:block cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+            >
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            </button>
+          </Tooltip>
 
           {/* Prominent Run/Visualize Button */}
-          <button
-            id="editor-run-visualize-btn"
-            onClick={handleRunClick}
-            className={`px-4 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-md ${
-              syntaxErrors.length > 0
-                ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-rose-500/20'
-                : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/20'
-            }`}
-            title={syntaxErrors.length > 0 ? 'Fix syntax errors before execution' : 'Run and visualize code execution step-by-step'}
-          >
-            {syntaxErrors.length > 0 ? (
-              <AlertTriangle className="w-3.5 h-3.5 fill-current text-white" />
-            ) : (
-              <Play className="w-3.5 h-3.5 fill-current" />
-            )}
-            <span>{syntaxErrors.length > 0 ? 'Fix Syntax' : 'Run / Visualize'}</span>
-          </button>
+          <Tooltip content="Execute and step through code" position="bottom">
+            <button
+              id="editor-run-visualize-btn"
+              onClick={handleRunClick}
+              className={`px-3 sm:px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-sm ${
+                syntaxErrors.length > 0
+                  ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
+            >
+              {syntaxErrors.length > 0 ? (
+                <AlertTriangle className="w-3.5 h-3.5 fill-current text-white" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current" />
+              )}
+              <span>{syntaxErrors.length > 0 ? 'Fix Syntax' : 'Run'}</span>
+            </button>
+          </Tooltip>
         </div>
       </div>
 
